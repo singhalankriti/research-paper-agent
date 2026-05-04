@@ -87,18 +87,12 @@ app.post("/api/chat", async (req, res) => {
         .filter((c) => c.web?.uri)
         .map((c) => ({ title: c.web.title || c.web.uri, url: c.web.uri }))
         .filter((s) => {
-          const academicDomains = [
-            "scholar.google", "pubmed", "ncbi.nlm.nih.gov", "arxiv.org",
-            "semanticscholar.org", "researchgate.net", "jstor.org",
-            "springer.com", "nature.com", "science.org", "cell.com",
-            "wiley.com", "tandfonline.com", "sciencedirect.com",
-            "acm.org", "ieee.org", "ssrn.com", "biorxiv.org",
-            "medrxiv.org", "plos.org", "frontiersin.org", "mdpi.com",
-            "oup.com", "cambridge.org", "edu"
-          ];
-          return academicDomains.some((d) => s.url.includes(d));
+          // Block obviously non-academic sources
+          const blocked = ["youtube.com", "twitter.com", "facebook.com", "instagram.com",
+            "reddit.com", "tiktok.com", "amazon.com", "wikipedia.org"];
+          return !blocked.some((d) => s.url.includes(d));
         })
-        .slice(0, 5);
+        .slice(0, 6);
     }
 
     if (!text) {
