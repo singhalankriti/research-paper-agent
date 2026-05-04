@@ -297,23 +297,24 @@
     .msg.user { flex-direction: row-reverse; margin-left: auto; }
 
     .msg-avatar {
-      width: 36px; height: 36px;
-      border-radius: 2px;
+      width: 38px; height: 38px;
+      border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 13px; flex-shrink: 0; margin-top: 2px;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 500;
+      flex-shrink: 0; margin-top: 2px;
     }
     .msg-avatar.agent {
-      background: var(--ink);
-      color: var(--gold);
-      font-size: 10px;
-      letter-spacing: 0.05em;
+      background: var(--gold-pale);
+      border: 1.5px solid var(--gold);
+      font-size: 22px;
+      box-shadow: 0 1px 4px rgba(196,154,60,0.15);
     }
     .msg-avatar.user {
       background: var(--accent-pale);
+      border: 1.5px solid #e8c8cc;
       color: var(--accent);
       font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
     }
 
     .msg-content { flex: 1; }
@@ -888,26 +889,33 @@
 
   function extractPapersFromText(text) {
     const papers = [];
-    // Match patterns like: "Title" by Author(s) (Year) - Journal
-    // or numbered/bulleted paper entries
-    const patterns = [
-      // "Title" by Authors (Year) - Journal
-      /[""]([^""]+)[""]\s+by\s+([^(]+)\((\d{4})\)\s*[-–]\s*([^\n.]+)/gi,
-      // Title by Authors (Year), Journal
-      /^[*\-\d.]*\s*[""]?([A-Z][^""*\n]{10,80})[""]?\s+by\s+([^(]+)\((\d{4})\)[,\s-–]*([^\n.]*)/gmi,
-    ];
+    const seen = new Set();
 
-    for (const pattern of patterns) {
+    // Clean asterisks used as italics markers e.g. *Journal Name*
+    const cleaned = text.replace(/\*([^*]+)\*/g, '$1');
+
+    // Pattern 1: "Title" by Author(s) (Year) - Journal
+    const p1 = /[""""]([^""""]{10,120})[""""]\s+by\s+([^(]{3,80}?)\s*\((\d{4})\)\s*[-–:]\s*([^\n.(]{3,80})/gi;
+    // Pattern 2: * "Title" by Author (Year) - Journal  (bulleted)
+    const p2 = /^\*\s*[""""]([^""""]{10,120})[""""]\s+by\s+([^(]{3,80}?)\s*\((\d{4})\)\s*[-–:]\s*([^\n.(]{3,80})/gim;
+    // Pattern 3: Title by Author (Year) - Journal (no quotes)
+    const p3 = /^[*\-\d.]+\s+([A-Z][^""""*\n]{10,100}?)\s+by\s+([^(]{3,60}?)\s*\((\d{4})\)\s*[-–:]\s*([^\n.(]{3,60})/gim;
+
+    for (const pattern of [p1, p2, p3]) {
       let match;
-      while ((match = pattern.exec(text)) !== null && papers.length < 5) {
-        const title   = match[1]?.trim();
-        const authors = match[2]?.trim().replace(/\s+and\s+/gi, ' & ');
+      pattern.lastIndex = 0;
+      while ((match = pattern.exec(cleaned)) !== null) {
+        const title   = match[1]?.trim().replace(/\*+/g, '');
+        const authors = match[2]?.trim().replace(/\s+and\s+/gi, ' & ').replace(/,\s*$/, '');
         const year    = match[3]?.trim();
-        const journal = match[4]?.trim() || 'Academic Journal';
-        if (title && authors && year) {
-          papers.push({ title, authors, year, journal });
+        const journal = match[4]?.trim().replace(/\*+/g, '').replace(/\.$/, '');
+        if (title && authors && year && !seen.has(title)) {
+          seen.add(title);
+          papers.push({ title, authors, year, journal: journal || 'Academic Journal' });
+          if (papers.length >= 5) break;
         }
       }
+      if (papers.length >= 5) break;
     }
     return papers;
   }
