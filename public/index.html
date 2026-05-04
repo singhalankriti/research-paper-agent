@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Alankriti's Research Paper Agent</title>
+  <title>Alankriti · Research Paper Agent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -789,18 +789,82 @@
     return text;
   }
 
-  function buildCitation(query, format) {
-    const year = new Date().getFullYear();
-    const formats = {
-      APA:     `[Author, A. A., & Author, B. B.] (${year}). [Title of paper]. <em>[Journal Name]</em>, [Vol](Issue), [Pages]. [DOI]`,
-      MLA:     `[Author Surname], [First Name]. "[Title of Paper]." <em>[Journal Name]</em>, vol. [X], no. [X], ${year}, pp. [X–X].`,
-      Chicago: `[Author Last], [First]. "${year}". "[Paper Title]." <em>[Journal Name]</em> [Vol] ([Issue]): [Pages].`,
-      Harvard: `[Author Last], [Initial]. (${year}) '[Paper Title]', <em>[Journal]</em>, [Vol]([Issue]), pp.[Pages].`
-    };
-    return formats[format] || formats['APA'];
+  // Store extracted papers globally so dropdown can re-render them
+  let lastExtractedPapers = [];
+
+  function extractPapersFromText(text) {
+    const papers = [];
+    // Match patterns like: "Title" by Author(s) (Year) - Journal
+    // or numbered/bulleted paper entries
+    const patterns = [
+      // "Title" by Authors (Year) - Journal
+      /[""]([^""]+)[""]\s+by\s+([^(]+)\((\d{4})\)\s*[-–]\s*([^\n.]+)/gi,
+      // Title by Authors (Year), Journal
+      /^[*\-\d.]*\s*[""]?([A-Z][^""*\n]{10,80})[""]?\s+by\s+([^(]+)\((\d{4})\)[,\s-–]*([^\n.]*)/gmi,
+    ];
+
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(text)) !== null && papers.length < 5) {
+        const title   = match[1]?.trim();
+        const authors = match[2]?.trim().replace(/\s+and\s+/gi, ' & ');
+        const year    = match[3]?.trim();
+        const journal = match[4]?.trim() || 'Academic Journal';
+        if (title && authors && year) {
+          papers.push({ title, authors, year, journal });
+        }
+      }
+    }
+    return papers;
   }
 
-  function buildSourcesHtml(sources, citationFormat) {
+  function formatCitation(paper, format) {
+    const { title, authors, year, journal } = paper;
+    // Format author: "Last, F." style for APA
+    const authorShort = authors.length > 40 ? authors.slice(0, 40) + ' et al.' : authors;
+    switch (format) {
+      case 'APA':
+        return `${authorShort} (${year}). ${title}. <em>${journal}</em>.`;
+      case 'MLA':
+        return `${authorShort}. "${title}." <em>${journal}</em>, ${year}.`;
+      case 'Chicago':
+        return `${authorShort}. "${title}." <em>${journal}</em> (${year}).`;
+      case 'Harvard':
+        return `${authorShort} (${year}) '${title}', <em>${journal}</em>.`;
+      default:
+        return `${authorShort} (${year}). ${title}. <em>${journal}</em>.`;
+    }
+  }
+
+  function renderCitationBoxes(papers, format) {
+    if (!papers || papers.length === 0) {
+      return `
+        <div class="citation-box">
+          <div class="citation-box-label">Citation (${format}) — click any to copy</div>
+          <div class="citation-box-text" onclick="copyText(this)" title="Click to copy">
+            No paper metadata detected. Please manually fill: ${formatCitation({title:'[Paper Title]', authors:'[Author(s)]', year: new Date().getFullYear(), journal:'[Journal]'}, format)}
+          </div>
+        </div>`;
+    }
+    return papers.map((p, i) => `
+      <div class="citation-box" style="margin-top:${i===0?'12':'6'}px">
+        <div class="citation-box-label">${format} Citation ${papers.length > 1 ? (i+1) : ''} — click to copy</div>
+        <div class="citation-box-text" onclick="copyText(this)" title="Click to copy">${formatCitation(p, format)}</div>
+        <div class="citation-copy-hint">↑ Verify details against the original paper</div>
+      </div>`).join('');
+  }
+
+  // Live update citations when dropdown changes
+  document.getElementById('citation-format').addEventListener('change', function() {
+    const format = this.value;
+    document.querySelectorAll('.citation-region').forEach(region => {
+      region.innerHTML = renderCitationBoxes(
+        JSON.parse(region.dataset.papers || '[]'), format
+      );
+    });
+  });
+
+  function buildSourcesHtml(sources, citationFormat, rawText) {
     let html = '';
     if (sources && sources.length > 0) {
       html += '<div class="sources-row"><span class="sources-label">Sources</span>';
@@ -809,14 +873,11 @@
       });
       html += '</div>';
     }
-    // Citation template
-    const cit = buildCitation('', citationFormat);
-    html += `
-      <div class="citation-box">
-        <div class="citation-box-label">Citation Template (${citationFormat}) — click to copy</div>
-        <div class="citation-box-text" onclick="copyText(this)" title="Click to copy">${cit}</div>
-        <div class="citation-copy-hint">↑ Replace bracketed fields with actual paper details</div>
-      </div>`;
+    // Extract real papers from response text
+    const papers = extractPapersFromText(rawText || '');
+    lastExtractedPapers = papers;
+    const citHtml = renderCitationBoxes(papers, citationFormat);
+    html += `<div class="citation-region" data-papers='${JSON.stringify(papers)}'>${citHtml}</div>`;
     return html;
   }
 
@@ -922,7 +983,7 @@
         addMsg('agent', `<span class="error-msg">Error: ${data.error}</span>`);
       } else {
         const formatted = fmt(data.text);
-        const extras    = buildSourcesHtml(data.sources, citFmt);
+        const extras    = buildSourcesHtml(data.sources, citFmt, data.text);
         addMsg('agent', formatted + extras, data.text);
         history.push({ role: 'assistant', content: data.text });
       }
