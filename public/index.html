@@ -3,313 +3,747 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Research Paper Agent</title>
+  <title>Alankriti · Research Paper Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
+    :root {
+      --cream: #f7f4ef;
+      --cream-dark: #ede9e0;
+      --ink: #1a1714;
+      --ink-soft: #3d3830;
+      --ink-muted: #7a6f61;
+      --ink-faint: #b5a99a;
+      --accent: #8b2635;
+      --accent-soft: #c4515f;
+      --accent-pale: #f5e6e8;
+      --gold: #c49a3c;
+      --gold-pale: #f7f0e0;
+      --border: #d4cdc2;
+      --border-light: #e8e2d8;
+      --shadow: rgba(26,23,20,0.08);
+      --shadow-md: rgba(26,23,20,0.14);
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0a0c14;
-      color: #e0e4f0;
+      font-family: 'Source Serif 4', Georgia, serif;
+      background: var(--cream);
+      color: var(--ink);
       height: 100vh;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      overflow: hidden;
     }
 
-    #app {
-      width: 100%;
-      max-width: 820px;
-      height: 100vh;
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      background: var(--ink);
+      color: var(--cream);
       display: flex;
       flex-direction: column;
-      background: #12151f;
-      border-left: 1px solid #1e2235;
-      border-right: 1px solid #1e2235;
+      border-right: 1px solid #2d2a26;
+      overflow: hidden;
     }
 
-    /* Header */
-    #header {
+    .sidebar-brand {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid #2d2a26;
+    }
+    .sidebar-brand .journal-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .sidebar-brand h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--cream);
+      line-height: 1.2;
+    }
+    .sidebar-brand .by-line {
+      font-size: 12px;
+      color: #6b6358;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    .sidebar-section {
+      padding: 16px 24px 8px;
+    }
+    .sidebar-section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #6b6358;
+      margin-bottom: 10px;
+    }
+
+    /* Filters */
+    .filter-group { margin-bottom: 16px; }
+    .filter-label {
+      font-size: 11px;
+      color: #9a8f82;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .year-range {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .year-input {
+      flex: 1;
+      background: #2d2a26;
+      border: 1px solid #3d3830;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 12px;
+      color: var(--cream);
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+      width: 70px;
+    }
+    .year-input:focus { border-color: var(--gold); }
+    .year-sep { font-size: 11px; color: #6b6358; }
+
+    .citation-select {
+      width: 100%;
+      background: #2d2a26;
+      border: 1px solid #3d3830;
+      border-radius: 4px;
+      padding: 7px 10px;
+      font-size: 12px;
+      color: var(--cream);
+      font-family: 'Source Serif 4', serif;
+      outline: none;
+      cursor: pointer;
+    }
+    .citation-select:focus { border-color: var(--gold); }
+
+    /* Search History */
+    #history-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 24px;
+    }
+    #history-list::-webkit-scrollbar { width: 3px; }
+    #history-list::-webkit-scrollbar-thumb { background: #3d3830; border-radius: 2px; }
+
+    .history-item {
+      padding: 9px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #9a8f82;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 2px;
+      transition: background 0.15s, color 0.15s;
+      line-height: 1.4;
+    }
+    .history-item:hover { background: #2d2a26; color: var(--cream); }
+    .history-item .hi-icon { flex-shrink: 0; margin-top: 1px; opacity: 0.5; font-size: 10px; }
+    .history-empty {
+      font-size: 12px;
+      color: #4d4840;
+      font-style: italic;
+      padding: 8px 0;
+    }
+
+    .sidebar-footer {
       padding: 16px 24px;
-      border-bottom: 1px solid #1e2235;
+      border-top: 1px solid #2d2a26;
+    }
+    .source-tags-mini {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .stag {
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 2px 6px;
+      border-radius: 2px;
+      background: #2d2a26;
+      color: #6b6358;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Main ── */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--cream);
+    }
+
+    /* Top bar */
+    #topbar {
+      padding: 14px 32px;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 14px;
-      background: #0e1018;
+      gap: 16px;
+      background: var(--cream);
       flex-shrink: 0;
     }
-    .logo {
-      width: 38px; height: 38px; border-radius: 10px;
-      background: linear-gradient(135deg, #4f6ef7, #7c3aed);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
+    .topbar-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      color: var(--ink-soft);
+      font-style: italic;
     }
-    .header-text h1 { font-size: 15px; font-weight: 600; color: #f0f2ff; }
-    .header-text p { font-size: 12px; color: #5a6080; margin-top: 2px; }
-    .badge {
-      margin-left: auto;
-      font-size: 11px; padding: 4px 10px;
-      border-radius: 20px;
-      background: #1a1e35;
-      color: #4f6ef7;
-      border: 1px solid #4f6ef730;
-      white-space: nowrap;
+    .topbar-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border: 1px solid var(--accent);
+      border-radius: 2px;
+      color: var(--accent);
     }
-
-    /* Source chips row */
-    .source-bar {
-      padding: 8px 24px;
-      border-bottom: 1px solid #1e2235;
-      display: flex; gap: 6px; flex-wrap: wrap;
-      background: #0e1018;
-      flex-shrink: 0;
-    }
-    .source-badge {
-      font-size: 10px; padding: 3px 8px;
-      border-radius: 20px;
-      border: 1px solid #1e2235;
-      color: #5a6080;
+    .topbar-actions { margin-left: auto; display: flex; gap: 10px; }
+    .action-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
       background: transparent;
+      color: var(--ink-muted);
+      cursor: pointer;
+      transition: all 0.15s;
     }
+    .action-btn:hover { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+    .action-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .action-btn.primary:hover { background: #6e1e2a; border-color: #6e1e2a; }
 
-    /* Messages */
+    /* Messages area */
     #messages {
-      flex: 1; overflow-y: auto;
-      padding: 24px;
-      display: flex; flex-direction: column; gap: 22px;
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
       scroll-behavior: smooth;
     }
     #messages::-webkit-scrollbar { width: 4px; }
-    #messages::-webkit-scrollbar-thumb { background: #1e2235; border-radius: 4px; }
+    #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-    .msg { display: flex; gap: 12px; align-items: flex-start; }
-    .msg.user { flex-direction: row-reverse; }
-
-    .avatar {
-      width: 34px; height: 34px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; flex-shrink: 0; margin-top: 2px;
+    /* Welcome screen */
+    .welcome {
+      max-width: 640px;
+      margin: 20px auto 0;
+      text-align: center;
     }
-    .avatar.agent { background: linear-gradient(135deg, #4f6ef7, #7c3aed); }
-    .avatar.user { background: #1e2235; font-size: 12px; color: #8090c0; font-weight: 600; }
+    .welcome .ornament {
+      font-size: 32px;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .welcome h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+    .welcome p {
+      font-size: 15px;
+      color: var(--ink-muted);
+      line-height: 1.7;
+      margin-bottom: 24px;
+      font-style: italic;
+    }
+    .welcome-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .wchip {
+      font-size: 12px;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: white;
+      color: var(--ink-soft);
+      cursor: pointer;
+      font-family: 'Source Serif 4', serif;
+      transition: all 0.15s;
+      text-align: left;
+      line-height: 1.4;
+    }
+    .wchip:hover { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+
+    /* Message bubbles */
+    .msg { display: flex; gap: 16px; align-items: flex-start; max-width: 860px; }
+    .msg.user { flex-direction: row-reverse; margin-left: auto; }
+
+    .msg-avatar {
+      width: 36px; height: 36px;
+      border-radius: 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0; margin-top: 2px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+    }
+    .msg-avatar.agent {
+      background: var(--ink);
+      color: var(--gold);
+      font-size: 10px;
+      letter-spacing: 0.05em;
+    }
+    .msg-avatar.user {
+      background: var(--accent-pale);
+      color: var(--accent);
+      font-size: 11px;
+    }
+
+    .msg-content { flex: 1; }
+
+    .msg-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 8px;
+    }
+    .msg.user .msg-meta { text-align: right; }
 
     .bubble {
-      max-width: 80%;
-      padding: 14px 16px;
-      border-radius: 16px;
-      font-size: 14px;
-      line-height: 1.7;
+      padding: 18px 22px;
+      font-size: 14.5px;
+      line-height: 1.8;
+      color: var(--ink-soft);
     }
     .msg.agent .bubble {
-      background: #161928;
-      border: 1px solid #1e2235;
-      border-radius: 4px 16px 16px 16px;
-      color: #c8d0e8;
+      background: white;
+      border: 1px solid var(--border-light);
+      border-top: 3px solid var(--accent);
+      box-shadow: 0 1px 4px var(--shadow);
     }
     .msg.user .bubble {
-      background: #1a1e35;
-      border: 1px solid #4f6ef730;
-      border-radius: 16px 4px 16px 16px;
-      color: #c0c8f0;
+      background: var(--ink);
+      color: var(--cream);
+      border: 1px solid var(--ink);
     }
 
-    /* Paper cards inside agent bubble */
-    .paper-card {
-      background: #0e1018;
-      border: 1px solid #1e2235;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin-top: 10px;
+    /* Response formatting */
+    .bubble strong { color: var(--ink); font-weight: 600; }
+    .bubble em { color: var(--ink-muted); }
+    .bubble .section-head {
+      font-family: 'Playfair Display', serif;
       font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin: 16px 0 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border-light);
     }
-    .paper-card .paper-title { color: #4f6ef7; font-weight: 500; margin-bottom: 4px; }
-    .paper-card .paper-meta { color: #5a6080; font-size: 12px; }
-    .paper-card a { color: #4f6ef7; text-decoration: none; }
-    .paper-card a:hover { text-decoration: underline; }
-
-    /* Sources footer */
-    .sources-row { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
-    .src-chip {
-      font-size: 11px; padding: 3px 10px;
-      border-radius: 20px;
-      background: #1a1e35;
-      border: 1px solid #4f6ef730;
-      color: #4f6ef7;
+    .bubble .section-head:first-child { margin-top: 0; }
+    .bubble .paper-entry {
+      background: var(--cream);
+      border: 1px solid var(--border-light);
+      border-left: 3px solid var(--gold);
+      padding: 10px 14px;
+      margin: 8px 0;
+      border-radius: 0 2px 2px 0;
+      font-size: 13.5px;
+    }
+    .bubble .paper-entry .paper-title {
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 3px;
+    }
+    .bubble .paper-entry .paper-meta {
+      font-size: 12px;
+      color: var(--ink-muted);
+      font-style: italic;
+    }
+    .bubble .paper-entry a {
+      color: var(--accent);
       text-decoration: none;
-      transition: background 0.15s;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
     }
-    .src-chip:hover { background: #252a45; }
+    .bubble .paper-entry a:hover { text-decoration: underline; }
+
+    /* Sources row */
+    .sources-row {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .sources-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-right: 4px;
+    }
+    .src-link {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--accent);
+      text-decoration: none;
+      background: white;
+      transition: all 0.12s;
+    }
+    .src-link:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* Citation box */
+    .citation-box {
+      margin-top: 12px;
+      background: var(--gold-pale);
+      border: 1px solid #e0d0a0;
+      border-radius: 2px;
+      padding: 10px 14px;
+    }
+    .citation-box-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #8a6e2a;
+      margin-bottom: 6px;
+    }
+    .citation-box-text {
+      font-size: 12px;
+      color: var(--ink-soft);
+      font-style: italic;
+      line-height: 1.6;
+      cursor: pointer;
+    }
+    .citation-box-text:hover { color: var(--accent); }
+    .citation-copy-hint {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: #8a6e2a;
+      margin-top: 4px;
+    }
 
     /* Typing */
-    .typing-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .typing-wrap { display: flex; flex-direction: column; gap: 8px; }
     .searching-label {
-      font-size: 12px; color: #4f6ef7;
-      display: flex; align-items: center; gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 8px;
     }
-    .searching-label::before {
-      content: "";
-      width: 8px; height: 8px; border-radius: 50%;
-      border: 2px solid #4f6ef7;
+    .spin {
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 1.5px solid var(--accent);
       border-top-color: transparent;
       animation: spin 0.8s linear infinite;
       display: inline-block;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .typing-dots { display: flex; gap: 4px; align-items: center; }
+    .typing-dots { display: flex; gap: 4px; }
     .typing-dots span {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #2a3050;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--border);
       animation: pulse 1.2s infinite;
     }
     .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
     .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes pulse { 0%,80%,100%{opacity:.2;transform:scale(.85)} 40%{opacity:1;transform:scale(1)} }
+    @keyframes pulse { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
 
-    /* Suggestions */
-    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-    .chip {
-      font-size: 12px; padding: 6px 13px;
-      border-radius: 20px;
-      border: 1px solid #1e2235;
-      background: transparent;
-      color: #5a6080;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.15s;
-      text-align: left;
-    }
-    .chip:hover { background: #161928; color: #c8d0e8; border-color: #2a3050; }
-
-    /* Input */
+    /* Input area */
     #input-area {
-      padding: 16px 24px 20px;
-      border-top: 1px solid #1e2235;
-      background: #0e1018;
+      padding: 20px 32px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--cream);
       flex-shrink: 0;
     }
     .input-wrap {
-      display: flex; gap: 10px; align-items: flex-end;
-      background: #161928;
-      border: 1px solid #1e2235;
-      border-radius: 14px;
-      padding: 10px 10px 10px 16px;
-      transition: border-color 0.15s;
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+      background: white;
+      box-shadow: 0 1px 4px var(--shadow);
     }
-    .input-wrap:focus-within { border-color: #4f6ef7; }
+    .input-wrap:focus-within { border-color: var(--accent); }
     textarea {
-      flex: 1; resize: none; border: none; outline: none;
-      background: transparent;
-      font-size: 14px; font-family: inherit;
-      line-height: 1.5; max-height: 120px;
-      color: #e0e4f0;
-      caret-color: #4f6ef7;
-    }
-    textarea::placeholder { color: #3a4060; }
-    #send-btn {
-      width: 36px; height: 36px; border-radius: 10px;
+      flex: 1;
+      resize: none;
       border: none;
-      background: linear-gradient(135deg, #4f6ef7, #7c3aed);
-      color: #fff; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      transition: opacity 0.15s, transform 0.1s;
+      outline: none;
+      background: transparent;
+      font-size: 14px;
+      font-family: 'Source Serif 4', serif;
+      line-height: 1.6;
+      padding: 14px 18px;
+      max-height: 160px;
+      color: var(--ink);
+      caret-color: var(--accent);
     }
-    #send-btn:hover { opacity: 0.85; }
-    #send-btn:active { transform: scale(0.94); }
-    #send-btn:disabled { opacity: 0.3; cursor: default; }
-    #send-btn svg { width: 16px; height: 16px; }
+    textarea::placeholder { color: var(--ink-faint); font-style: italic; }
+    #send-btn {
+      width: 52px;
+      border: none;
+      border-left: 1px solid var(--border-light);
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    #send-btn:hover { background: #6e1e2a; }
+    #send-btn:disabled { background: var(--border); cursor: default; }
+    #send-btn svg { width: 18px; height: 18px; }
 
-    .hint { font-size: 11px; color: #2a3050; text-align: center; margin-top: 8px; }
-    .error { color: #f87171; font-size: 13px; }
+    .input-hint {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .hint-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .char-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--ink-faint);
+    }
+    .char-count.warn { color: var(--accent-soft); }
 
-    /* Formatting helpers */
-    .bubble strong { color: #e0e4f0; }
-    .bubble em { color: #7080a0; font-style: italic; }
+    .error-msg { color: var(--accent); font-size: 13px; font-style: italic; }
+
+    /* Divider */
+    .vol-divider {
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      color: var(--ink-faint);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .vol-divider::before, .vol-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-light);
+    }
   </style>
 </head>
 <body>
-<div id="app">
-  <div id="header">
-    <div class="logo">📚</div>
-    <div class="header-text">
-      <h1>Research Paper Agent</h1>
-      <p>Academic sources only · All fields · Powered by Gemini</p>
-    </div>
-    <div class="badge">🔬 Peer-reviewed only</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-brand">
+    <div class="journal-label">Research Intelligence</div>
+    <h1>Alankriti<br>Scholar</h1>
+    <div class="by-line">Academic Paper Agent</div>
   </div>
 
-  <div class="source-bar">
-    <span class="source-badge">arXiv</span>
-    <span class="source-badge">PubMed</span>
-    <span class="source-badge">Google Scholar</span>
-    <span class="source-badge">IEEE</span>
-    <span class="source-badge">Nature</span>
-    <span class="source-badge">Springer</span>
-    <span class="source-badge">JSTOR</span>
-    <span class="source-badge">ScienceDirect</span>
-    <span class="source-badge">Semantic Scholar</span>
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Filters</div>
+    <div class="filter-group">
+      <span class="filter-label">Year Range</span>
+      <div class="year-range">
+        <input type="number" class="year-input" id="year-from" placeholder="2000" min="1900" max="2026" value="2000">
+        <span class="year-sep">—</span>
+        <input type="number" class="year-input" id="year-to" placeholder="2026" min="1900" max="2026" value="2026">
+      </div>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Citation Format</span>
+      <select class="citation-select" id="citation-format">
+        <option value="APA">APA 7th Edition</option>
+        <option value="MLA">MLA 9th Edition</option>
+        <option value="Chicago">Chicago Author-Date</option>
+        <option value="Harvard">Harvard</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Search History</div>
+  </div>
+  <div id="history-list">
+    <div class="history-empty">No searches yet</div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-section-label" style="margin-bottom:8px;">Indexed Sources</div>
+    <div class="source-tags-mini">
+      <span class="stag">arXiv</span>
+      <span class="stag">PubMed</span>
+      <span class="stag">IEEE</span>
+      <span class="stag">Nature</span>
+      <span class="stag">Springer</span>
+      <span class="stag">JSTOR</span>
+      <span class="stag">ACM</span>
+      <span class="stag">SSRN</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <span class="topbar-title">Peer-Reviewed Research Assistant</span>
+    <span class="topbar-badge">Academic Only</span>
+    <div class="topbar-actions">
+      <button class="action-btn" onclick="clearChat()">Clear Session</button>
+      <button class="action-btn primary" onclick="exportPDF()" id="export-btn" disabled>Export PDF</button>
+    </div>
   </div>
 
   <div id="messages">
-    <div class="msg agent">
-      <div class="avatar agent">📚</div>
-      <div class="bubble">
-        Hello! I'm your academic research assistant. I only surface <strong>peer-reviewed papers, journals, and conference proceedings</strong> — no blogs or random articles.
-        <br><br>
-        Ask me about any research topic and I'll find relevant papers, summarize key findings, and point you to the right sources.
-        <div class="suggestions">
-          <button class="chip" onclick="fillAndSend(this)">Latest papers on transformer attention mechanisms</button>
-          <button class="chip" onclick="fillAndSend(this)">Research on CRISPR gene editing 2023-2024</button>
-          <button class="chip" onclick="fillAndSend(this)">Studies on climate change and mental health</button>
-          <button class="chip" onclick="fillAndSend(this)">Papers on quantum computing error correction</button>
-        </div>
+    <div class="welcome">
+      <span class="ornament">⚖</span>
+      <h2>Welcome to Alankriti Scholar</h2>
+      <p>Your intelligent guide to peer-reviewed academic literature.<br>Ask about any research topic — I surface only verified academic sources.</p>
+      <div class="welcome-chips">
+        <button class="wchip" onclick="fillAndSend(this)">Studies on financial literacy in India</button>
+        <button class="wchip" onclick="fillAndSend(this)">Latest papers on transformer attention mechanisms</button>
+        <button class="wchip" onclick="fillAndSend(this)">CRISPR gene editing research 2022–2024</button>
+        <button class="wchip" onclick="fillAndSend(this)">Papers on climate change and mental health</button>
       </div>
     </div>
   </div>
 
   <div id="input-area">
     <div class="input-wrap">
-      <textarea id="query" rows="1" placeholder="Search academic papers, journals, research topics..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <textarea id="query" rows="2" placeholder="Search academic literature, journals, research topics…" onkeydown="handleKey(event)" oninput="autoResize(this); updateCharCount(this)"></textarea>
       <button id="send-btn" onclick="sendMessage()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"></line>
           <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
         </svg>
       </button>
     </div>
-    <div class="hint">Press Enter to search · Shift+Enter for new line</div>
+    <div class="input-hint">
+      <span class="hint-text">Enter to search · Shift+Enter for new line</span>
+      <span class="char-count" id="char-count">0 / 800</span>
+    </div>
   </div>
 </div>
 
 <script>
   const messagesEl = document.getElementById('messages');
-  const queryEl = document.getElementById('query');
-  const sendBtn = document.getElementById('send-btn');
-  let history = [];
-  let loading = false;
+  const queryEl    = document.getElementById('query');
+  const sendBtn    = document.getElementById('send-btn');
+  const exportBtn  = document.getElementById('export-btn');
+  const charCount  = document.getElementById('char-count');
 
+  let history    = [];
+  let loading    = false;
+  let sessionLog = []; // for PDF export
+  let searchHist = [];
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
   function autoResize(el) {
     el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
   }
-
+  function updateCharCount(el) {
+    const len = el.value.length;
+    charCount.textContent = `${len} / 800`;
+    charCount.classList.toggle('warn', len > 700);
+  }
   function handleKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   }
-
   function fillAndSend(btn) {
-    queryEl.value = btn.textContent;
+    queryEl.value = btn.textContent.trim();
     autoResize(queryEl);
+    updateCharCount(queryEl);
     sendMessage();
   }
+  function clearChat() {
+    history = [];
+    sessionLog = [];
+    exportBtn.disabled = true;
+    messagesEl.innerHTML = `
+      <div class="welcome">
+        <span class="ornament">⚖</span>
+        <h2>Welcome to Alankriti Scholar</h2>
+        <p>Your intelligent guide to peer-reviewed academic literature.<br>Ask about any research topic — I surface only verified academic sources.</p>
+        <div class="welcome-chips">
+          <button class="wchip" onclick="fillAndSend(this)">Studies on financial literacy in India</button>
+          <button class="wchip" onclick="fillAndSend(this)">Latest papers on transformer attention mechanisms</button>
+          <button class="wchip" onclick="fillAndSend(this)">CRISPR gene editing research 2022–2024</button>
+          <button class="wchip" onclick="fillAndSend(this)">Papers on climate change and mental health</button>
+        </div>
+      </div>`;
+  }
 
-  function addMsg(role, html) {
+  // ── History sidebar ────────────────────────────────────────────────────────
+  function addToHistory(query) {
+    searchHist.unshift(query);
+    if (searchHist.length > 20) searchHist.pop();
+    const hl = document.getElementById('history-list');
+    hl.innerHTML = searchHist.map(q => `
+      <div class="history-item" onclick="fillAndSend(this)">
+        <span class="hi-icon">›</span>
+        <span>${q.slice(0, 60)}${q.length > 60 ? '…' : ''}</span>
+      </div>`).join('');
+  }
+
+  // ── Message rendering ──────────────────────────────────────────────────────
+  function addMsg(role, html, rawText) {
+    // Remove welcome if present
+    const welcome = messagesEl.querySelector('.welcome');
+    if (welcome) welcome.remove();
+
+    const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
     const div = document.createElement('div');
     div.className = 'msg ' + role;
-    const icon = role === 'user' ? 'U' : '📚';
-    div.innerHTML = `<div class="avatar ${role}">${icon}</div><div class="bubble">${html}</div>`;
+    const avatarLabel = role === 'user' ? 'YOU' : 'RAG';
+    const metaLabel   = role === 'user' ? 'Query' : 'Response';
+    div.innerHTML = `
+      <div class="msg-avatar ${role}">${avatarLabel}</div>
+      <div class="msg-content">
+        <div class="msg-meta">${metaLabel} · ${now}</div>
+        <div class="bubble">${html}</div>
+      </div>`;
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    if (rawText) {
+      sessionLog.push({ role, text: rawText, time: now });
+      if (role === 'agent') exportBtn.disabled = false;
+    }
     return div;
   }
 
@@ -318,56 +752,160 @@
     div.className = 'msg agent';
     div.id = 'typing';
     div.innerHTML = `
-      <div class="avatar agent">📚</div>
-      <div class="bubble">
-        <div class="typing-wrap">
-          <div class="searching-label">Searching academic databases...</div>
-          <div class="typing-dots"><span></span><span></span><span></span></div>
+      <div class="msg-avatar agent">RAG</div>
+      <div class="msg-content">
+        <div class="msg-meta">Searching…</div>
+        <div class="bubble">
+          <div class="typing-wrap">
+            <div class="searching-label"><span class="spin"></span>Querying academic databases</div>
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+          </div>
         </div>
       </div>`;
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
-
   function hideTyping() {
     const t = document.getElementById('typing');
     if (t) t.remove();
   }
 
+  // ── Format response ────────────────────────────────────────────────────────
   function fmt(text) {
-    // Bold
+    // Section headers like "**Summary**" or "## Summary"
+    text = text.replace(/^#{1,3}\s+(.+)$/gm, '<div class="section-head">$1</div>');
+    text = text.replace(/^\*\*([A-Z][^*]+)\*\*$/gm, '<div class="section-head">$1</div>');
+    // Bold inline
     text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     // Italic
     text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
     // Bullet points
-    text = text.replace(/^[\-\•] (.+)$/gm, '<div style="padding-left:12px;margin:3px 0">• $1</div>');
-    // Numbered lists
-    text = text.replace(/^\d+\. (.+)$/gm, '<div style="padding-left:12px;margin:3px 0">$&</div>');
+    text = text.replace(/^[\-\•]\s+(.+)$/gm, '<div style="padding-left:14px;margin:4px 0;display:flex;gap:8px"><span style="color:var(--accent);flex-shrink:0">›</span><span>$1</span></div>');
+    // Numbered
+    text = text.replace(/^(\d+)\.\s+(.+)$/gm, '<div style="padding-left:14px;margin:4px 0;display:flex;gap:8px"><span style="color:var(--ink-faint);flex-shrink:0;font-family:JetBrains Mono,monospace;font-size:11px">$1.</span><span>$2</span></div>');
     // Line breaks
     text = text.replace(/\n\n/g, '<br><br>');
     text = text.replace(/\n/g, '<br>');
     return text;
   }
 
-  function buildSourcesHtml(sources) {
-    if (!sources || sources.length === 0) return '';
-    const chips = sources.map(s =>
-      `<a class="src-chip" href="${s.url}" target="_blank" rel="noopener">${s.title.slice(0, 40)}${s.title.length > 40 ? '…' : ''}</a>`
-    ).join('');
-    return `<div class="sources-row">${chips}</div>`;
+  function buildCitation(query, format) {
+    const year = new Date().getFullYear();
+    const formats = {
+      APA:     `[Author, A. A., & Author, B. B.] (${year}). [Title of paper]. <em>[Journal Name]</em>, [Vol](Issue), [Pages]. [DOI]`,
+      MLA:     `[Author Surname], [First Name]. "[Title of Paper]." <em>[Journal Name]</em>, vol. [X], no. [X], ${year}, pp. [X–X].`,
+      Chicago: `[Author Last], [First]. "${year}". "[Paper Title]." <em>[Journal Name]</em> [Vol] ([Issue]): [Pages].`,
+      Harvard: `[Author Last], [Initial]. (${year}) '[Paper Title]', <em>[Journal]</em>, [Vol]([Issue]), pp.[Pages].`
+    };
+    return formats[format] || formats['APA'];
   }
 
+  function buildSourcesHtml(sources, citationFormat) {
+    let html = '';
+    if (sources && sources.length > 0) {
+      html += '<div class="sources-row"><span class="sources-label">Sources</span>';
+      sources.forEach(s => {
+        html += `<a class="src-link" href="${s.url}" target="_blank" rel="noopener">${s.title.slice(0,35)}${s.title.length>35?'…':''}</a>`;
+      });
+      html += '</div>';
+    }
+    // Citation template
+    const cit = buildCitation('', citationFormat);
+    html += `
+      <div class="citation-box">
+        <div class="citation-box-label">Citation Template (${citationFormat}) — click to copy</div>
+        <div class="citation-box-text" onclick="copyText(this)" title="Click to copy">${cit}</div>
+        <div class="citation-copy-hint">↑ Replace bracketed fields with actual paper details</div>
+      </div>`;
+    return html;
+  }
+
+  function copyText(el) {
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = el.style.color;
+      el.style.color = 'var(--accent)';
+      setTimeout(() => el.style.color = orig, 1000);
+    });
+  }
+
+  // ── PDF Export ─────────────────────────────────────────────────────────────
+  function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    doc.setFont('times', 'bold');
+    doc.setFontSize(18);
+    doc.text('Alankriti Scholar — Research Session', pw/2, y, {align:'center'});
+    y += 8;
+
+    doc.setFont('times', 'italic');
+    doc.setFontSize(10);
+    doc.setTextColor(120, 100, 80);
+    doc.text(`Exported: ${new Date().toLocaleString()}`, pw/2, y, {align:'center'});
+    y += 10;
+
+    doc.setDrawColor(139, 38, 53);
+    doc.setLineWidth(0.5);
+    doc.line(15, y, pw-15, y);
+    y += 10;
+
+    sessionLog.forEach((entry, i) => {
+      if (y > 260) { doc.addPage(); y = 20; }
+
+      doc.setFont('times', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(180, 150, 120);
+      doc.text((entry.role === 'user' ? 'QUERY' : 'RESPONSE') + ' · ' + entry.time, 15, y);
+      y += 6;
+
+      doc.setFont('times', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(30, 25, 20);
+
+      const clean = entry.text.replace(/<[^>]+>/g, '').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+      const lines = doc.splitTextToSize(clean, pw - 30);
+      lines.forEach(line => {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.text(line, 15, y);
+        y += 6;
+      });
+      y += 6;
+
+      if (i < sessionLog.length - 1) {
+        doc.setDrawColor(220, 210, 200);
+        doc.setLineWidth(0.2);
+        doc.line(15, y-3, pw-15, y-3);
+      }
+    });
+
+    doc.save('alankriti-scholar-session.pdf');
+  }
+
+  // ── Send message ───────────────────────────────────────────────────────────
   async function sendMessage() {
     const q = queryEl.value.trim();
     if (!q || loading) return;
+    if (q.length > 800) {
+      alert('Query is too long. Please keep it under 800 characters.');
+      return;
+    }
+
+    const yearFrom = document.getElementById('year-from').value || '1900';
+    const yearTo   = document.getElementById('year-to').value   || '2026';
+    const citFmt   = document.getElementById('citation-format').value;
 
     loading = true;
     sendBtn.disabled = true;
     queryEl.value = '';
     queryEl.style.height = 'auto';
+    updateCharCount(queryEl);
 
-    addMsg('user', q);
-    history.push({ role: 'user', content: q });
+    addMsg('user', q, q);
+    addToHistory(q);
+    history.push({ role: 'user', content: `${q}\n\n[Filter: papers published between ${yearFrom} and ${yearTo}]` });
     showTyping();
 
     try {
@@ -381,15 +919,16 @@
       hideTyping();
 
       if (!res.ok) {
-        addMsg('agent', `<span class="error">Error: ${data.error}</span>`);
+        addMsg('agent', `<span class="error-msg">Error: ${data.error}</span>`);
       } else {
-        const html = fmt(data.text) + buildSourcesHtml(data.sources);
-        addMsg('agent', html);
+        const formatted = fmt(data.text);
+        const extras    = buildSourcesHtml(data.sources, citFmt);
+        addMsg('agent', formatted + extras, data.text);
         history.push({ role: 'assistant', content: data.text });
       }
     } catch (err) {
       hideTyping();
-      addMsg('agent', `<span class="error">Network error: ${err.message}</span>`);
+      addMsg('agent', `<span class="error-msg">Network error: ${err.message}</span>`);
     }
 
     loading = false;
