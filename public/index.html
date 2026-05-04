@@ -449,6 +449,33 @@
       color: #8a6e2a;
       margin-top: 4px;
     }
+    .citation-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .citation-row .citation-box-text {
+      flex: 1;
+    }
+    .citation-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .cit-btn {
+      width: 28px; height: 28px;
+      border-radius: 4px;
+      border: 1px solid #e0d0a0;
+      background: white;
+      color: #8a6e2a;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+    .cit-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .cit-btn svg { width: 13px; height: 13px; }
 
     /* Typing */
     .typing-wrap { display: flex; flex-direction: column; gap: 8px; }
@@ -545,6 +572,49 @@
 
     .error-msg { color: var(--accent); font-size: 13px; font-style: italic; }
 
+    /* Apply filter button */
+    .apply-btn {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      border: 1px solid var(--gold);
+      border-radius: 3px;
+      background: var(--gold);
+      color: var(--ink);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-weight: 500;
+    }
+    .apply-btn:hover { background: #b08830; border-color: #b08830; color: white; }
+    .clear-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      padding: 6px 8px;
+      border: 1px solid #3d3830;
+      border-radius: 3px;
+      background: transparent;
+      color: #6b6358;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .clear-btn:hover { background: #2d2a26; color: var(--cream); }
+    .filter-active-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+    }
+
+    /* Fade in animation for messages */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .msg { animation: fadeUp 0.3s ease forwards; }
+
     /* Divider */
     .vol-divider {
       text-align: center;
@@ -570,7 +640,7 @@
 <div id="sidebar">
   <div class="sidebar-brand">
     <div class="journal-label">Research Intelligence</div>
-    <h1>Scholar by<br>Alankriti</h1>
+    <h1>Alankriti<br>Scholar</h1>
     <div class="by-line">Academic Paper Agent</div>
   </div>
 
@@ -582,6 +652,13 @@
         <input type="number" class="year-input" id="year-from" placeholder="2000" min="1900" max="2026" value="2000">
         <span class="year-sep">—</span>
         <input type="number" class="year-input" id="year-to" placeholder="2026" min="1900" max="2026" value="2026">
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">
+        <button class="apply-btn" onclick="applyFilter()">Apply Filter</button>
+        <button class="clear-btn" onclick="clearFilter()">Reset</button>
+      </div>
+      <div id="filter-badge" style="display:none;margin-top:6px;">
+        <span class="filter-active-badge">● Filter active: <span id="filter-badge-text"></span></span>
       </div>
     </div>
     <div class="filter-group">
@@ -631,7 +708,7 @@
   <div id="messages">
     <div class="welcome">
       <span class="ornament">⚖</span>
-      <h2>Welcome to Scholar by Alankriti</h2>
+      <h2>Welcome to Alankriti Scholar</h2>
       <p>Your intelligent guide to peer-reviewed academic literature.<br>Ask about any research topic — I surface only verified academic sources.</p>
       <div class="welcome-chips">
         <button class="wchip" onclick="fillAndSend(this)">Studies on financial literacy in India</button>
@@ -670,6 +747,23 @@
   let loading    = false;
   let sessionLog = []; // for PDF export
   let searchHist = [];
+  let activeFilter = { from: null, to: null };
+
+  function applyFilter() {
+    const from = document.getElementById('year-from').value;
+    const to   = document.getElementById('year-to').value;
+    if (!from || !to) return;
+    activeFilter = { from, to };
+    document.getElementById('filter-badge').style.display = 'block';
+    document.getElementById('filter-badge-text').textContent = `${from}–${to}`;
+  }
+
+  function clearFilter() {
+    activeFilter = { from: null, to: null };
+    document.getElementById('year-from').value = '2000';
+    document.getElementById('year-to').value   = '2026';
+    document.getElementById('filter-badge').style.display = 'none';
+  }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function autoResize(el) {
@@ -697,7 +791,7 @@
     messagesEl.innerHTML = `
       <div class="welcome">
         <span class="ornament">⚖</span>
-        <h2>Welcome to Scholar by Alankriti</h2>
+        <h2>Welcome to Alankriti Scholar</h2>
         <p>Your intelligent guide to peer-reviewed academic literature.<br>Ask about any research topic — I surface only verified academic sources.</p>
         <div class="welcome-chips">
           <button class="wchip" onclick="fillAndSend(this)">Studies on financial literacy in India</button>
@@ -729,7 +823,7 @@
     const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
     const div = document.createElement('div');
     div.className = 'msg ' + role;
-    const avatarLabel = role === 'user' ? 'YOU' : 'RAG';
+    const avatarLabel = role === 'user' ? 'YOU' : '👩‍🏫';
     const metaLabel   = role === 'user' ? 'Query' : 'Response';
     div.innerHTML = `
       <div class="msg-avatar ${role}">${avatarLabel}</div>
@@ -752,7 +846,7 @@
     div.className = 'msg agent';
     div.id = 'typing';
     div.innerHTML = `
-      <div class="msg-avatar agent">RAG</div>
+      <div class="msg-avatar agent">👩‍🏫</div>
       <div class="msg-content">
         <div class="msg-meta">Searching…</div>
         <div class="bubble">
@@ -838,20 +932,47 @@
 
   function renderCitationBoxes(papers, format) {
     if (!papers || papers.length === 0) {
+      const fallback = formatCitation({title:'[Paper Title]', authors:'[Author(s)]', year: new Date().getFullYear(), journal:'[Journal]'}, format);
       return `
         <div class="citation-box">
-          <div class="citation-box-label">Citation (${format}) — click any to copy</div>
-          <div class="citation-box-text" onclick="copyText(this)" title="Click to copy">
-            No paper metadata detected. Please manually fill: ${formatCitation({title:'[Paper Title]', authors:'[Author(s)]', year: new Date().getFullYear(), journal:'[Journal]'}, format)}
+          <div class="citation-box-label">${format} Citation</div>
+          <div class="citation-row">
+            <div class="citation-box-text">${fallback}</div>
+            <div class="citation-actions">
+              <button class="cit-btn" onclick="copyCitation(this)" title="Copy citation">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
           </div>
         </div>`;
     }
-    return papers.map((p, i) => `
+    return papers.map((p, i) => {
+      const searchUrl = `https://scholar.google.com/scholar?q=${encodeURIComponent(p.title + ' ' + p.authors)}`;
+      return `
       <div class="citation-box" style="margin-top:${i===0?'12':'6'}px">
-        <div class="citation-box-label">${format} Citation ${papers.length > 1 ? (i+1) : ''} — click to copy</div>
-        <div class="citation-box-text" onclick="copyText(this)" title="Click to copy">${formatCitation(p, format)}</div>
-        <div class="citation-copy-hint">↑ Verify details against the original paper</div>
-      </div>`).join('');
+        <div class="citation-box-label">${format} Citation ${papers.length > 1 ? (i+1) : ''}</div>
+        <div class="citation-row">
+          <div class="citation-box-text">${formatCitation(p, format)}</div>
+          <div class="citation-actions">
+            <button class="cit-btn" onclick="copyCitation(this)" title="Copy citation">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <a class="cit-btn" href="${searchUrl}" target="_blank" rel="noopener" title="Find paper on Google Scholar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function copyCitation(btn) {
+    const text = btn.closest('.citation-box').querySelector('.citation-box-text').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.style.color = 'var(--accent)';
+      btn.title = 'Copied!';
+      setTimeout(() => { btn.style.color = ''; btn.title = 'Copy citation'; }, 1500);
+    });
   }
 
   // Live update citations when dropdown changes
@@ -954,9 +1075,12 @@
       return;
     }
 
-    const yearFrom = document.getElementById('year-from').value || '1900';
-    const yearTo   = document.getElementById('year-to').value   || '2026';
+    const yearFrom = activeFilter.from || null;
+    const yearTo   = activeFilter.to   || null;
     const citFmt   = document.getElementById('citation-format').value;
+    const filterNote = yearFrom && yearTo
+      ? `\n\n[Filter: only include papers published between ${yearFrom} and ${yearTo}]`
+      : '';
 
     loading = true;
     sendBtn.disabled = true;
@@ -966,7 +1090,7 @@
 
     addMsg('user', q, q);
     addToHistory(q);
-    history.push({ role: 'user', content: `${q}\n\n[Filter: papers published between ${yearFrom} and ${yearTo}]` });
+    history.push({ role: 'user', content: `${q}${filterNote}` });
     showTyping();
 
     try {
