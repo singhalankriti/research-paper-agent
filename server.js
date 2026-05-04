@@ -1,7 +1,6 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const fetch = require("node-fetch");
 const path = require("path");
 
 const app = express();
@@ -23,8 +22,8 @@ STRICT RULES:
 - When listing papers, format each as: "Title" by Author(s) (Year) - Journal/Source.
 - Always suggest related search terms or adjacent research areas at the end.`;
 
-// ── Chat endpoint ─────────────────────────────────────────────────────────────
 app.post("/api/chat", async (req, res) => {
+  console.log("POST /api/chat received");
   const { messages } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
@@ -36,13 +35,14 @@ app.post("/api/chat", async (req, res) => {
     return res.status(500).json({ error: "GEMINI_API_KEY is not set on the server." });
   }
 
-  // Convert messages to Gemini format
   const geminiMessages = messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
   }));
 
   try {
+    const { default: fetch } = await import("node-fetch");
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
@@ -53,11 +53,7 @@ app.post("/api/chat", async (req, res) => {
             parts: [{ text: SYSTEM_INSTRUCTION }],
           },
           contents: geminiMessages,
-          tools: [
-            {
-              google_search: {},
-            },
-          ],
+          tools: [{ google_search: {} }],
           generationConfig: {
             temperature: 0.3,
             maxOutputTokens: 1500,
@@ -67,6 +63,7 @@ app.post("/api/chat", async (req, res) => {
     );
 
     const data = await response.json();
+    console.log("Gemini status:", response.status);
 
     if (!response.ok) {
       const errMsg = data?.error?.message || "Gemini API error";
@@ -74,7 +71,6 @@ app.post("/api/chat", async (req, res) => {
       return res.status(response.status).json({ error: errMsg });
     }
 
-    // Extract text and grounding sources
     let text = "";
     let sources = [];
 
@@ -85,14 +81,12 @@ app.post("/api/chat", async (req, res) => {
       }
     }
 
-    // Extract grounding metadata (search sources)
     const groundingMeta = candidate?.groundingMetadata;
     if (groundingMeta?.groundingChunks) {
       sources = groundingMeta.groundingChunks
         .filter((c) => c.web?.uri)
         .map((c) => ({ title: c.web.title || c.web.uri, url: c.web.uri }))
         .filter((s) => {
-          // Only keep academic sources
           const academicDomains = [
             "scholar.google", "pubmed", "ncbi.nlm.nih.gov", "arxiv.org",
             "semanticscholar.org", "researchgate.net", "jstor.org",
@@ -100,7 +94,7 @@ app.post("/api/chat", async (req, res) => {
             "wiley.com", "tandfonline.com", "sciencedirect.com",
             "acm.org", "ieee.org", "ssrn.com", "biorxiv.org",
             "medrxiv.org", "plos.org", "frontiersin.org", "mdpi.com",
-            "oup.com", "cambridge.org", "mit.edu", "edu"
+            "oup.com", "cambridge.org", "edu"
           ];
           return academicDomains.some((d) => s.url.includes(d));
         })
@@ -108,7 +102,7 @@ app.post("/api/chat", async (req, res) => {
     }
 
     if (!text) {
-      text = "I could not find relevant academic research on this topic. Please try a more specific query or different keywords.";
+      text = "I could not find relevant academic research on this topic. Please try a more specific query.";
     }
 
     res.json({ text, sources });
@@ -118,11 +112,10 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-// Fallback
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Research Paper Agent running at http://localhost:${PORT}`);
+  console.log(`Research Paper Agent running on port ${PORT}`);
 });
