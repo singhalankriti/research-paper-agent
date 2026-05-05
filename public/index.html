@@ -47,6 +47,7 @@
       flex-direction: column;
       border-right: 1px solid #2d2a26;
       overflow: hidden;
+      transition: width 0.25s ease;
     }
 
     .sidebar-brand {
@@ -350,18 +351,6 @@
     /* Response formatting */
     .bubble strong { color: var(--ink); font-weight: 600; }
     .bubble em { color: var(--ink-muted); }
-    .bubble .section-head {
-      font-family: 'Playfair Display', serif;
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--accent);
-      margin: 16px 0 8px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid var(--border-light);
-    }
-    .bubble .section-head:first-child { margin-top: 0; }
     .bubble .paper-entry {
       background: var(--cream);
       border: 1px solid var(--border-light);
@@ -571,7 +560,57 @@
     }
     .char-count.warn { color: var(--accent-soft); }
 
-    .error-msg { color: var(--accent); font-size: 13px; font-style: italic; }
+    /* Sidebar toggle button */
+    .sidebar-toggle {
+      background: transparent;
+      border: 1px solid #3d3830;
+      border-radius: 4px;
+      color: #6b6358;
+      cursor: pointer;
+      padding: 6px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .sidebar-toggle:hover { background: #2d2a26; color: var(--cream); }
+
+    /* Collapsed sidebar state */
+    #sidebar.collapsed {
+      width: 0;
+      min-width: 0;
+      overflow: hidden;
+      border-right: none;
+    }
+    #sidebar-tab {
+      width: 20px;
+      background: var(--ink);
+      border-right: 1px solid #2d2a26;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #6b6358;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    #sidebar-tab:hover { color: var(--cream); }
+
+    /* Fix section-head spacing — remove excess top margin */
+    .bubble .section-head {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin: 12px 0 4px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .bubble .section-head:first-child { margin-top: 0; }
+    /* Remove excess br spacing around section heads */
+    .bubble br + .section-head { margin-top: 4px; }
 
     /* Apply filter button */
     .apply-btn {
@@ -692,16 +731,145 @@
       height: 1px;
       background: var(--border-light);
     }
+
+    /* ── Landing Page ── */
+    #landing {
+      position: fixed; inset: 0;
+      background: var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; padding: 24px;
+    }
+    #landing.hidden { display: none; }
+    .landing-inner { max-width: 560px; width: 100%; text-align: center; }
+    .landing-logo { font-size: 40px; margin-bottom: 12px; }
+    .landing-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 10px;
+    }
+    .landing-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 38px; font-weight: 700;
+      color: var(--cream); line-height: 1.1; margin-bottom: 14px;
+    }
+    .landing-sub {
+      font-size: 15px; color: #9a8f82;
+      line-height: 1.7; margin-bottom: 28px; font-style: italic;
+    }
+    .landing-features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; text-align: left; }
+    .lf-card {
+      display: flex; gap: 14px; align-items: flex-start;
+      background: #1e1b17; border: 1px solid #2d2a26;
+      border-radius: 6px; padding: 14px 16px;
+    }
+    .lf-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .lf-text { display: flex; flex-direction: column; gap: 3px; }
+    .lf-text strong { font-size: 13px; color: var(--cream); font-weight: 600; }
+    .lf-text span { font-size: 12px; color: #6b6358; line-height: 1.5; }
+    .landing-cta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; letter-spacing: 0.08em;
+      padding: 14px 36px;
+      background: var(--accent); color: white;
+      border: none; border-radius: 4px;
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
+      margin-bottom: 14px; display: inline-block;
+    }
+    .landing-cta:hover { background: #6e1e2a; transform: translateY(-1px); }
+    .landing-hint { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4d4840; letter-spacing: 0.1em; }
+
+    /* ── Saved Papers ── */
+    .saved-item {
+      padding: 8px 10px; font-size: 11px; color: #9a8f82;
+      display: flex; align-items: flex-start; gap: 6px;
+      line-height: 1.4; border: 1px solid #2d2a26;
+      border-radius: 4px; margin-bottom: 4px;
+    }
+    .saved-item .si-title { flex: 1; color: #c8bfb0; font-size: 11px; }
+    .saved-item .si-remove {
+      flex-shrink: 0; background: none; border: none;
+      color: #4d4840; cursor: pointer; font-size: 13px; padding: 0;
+    }
+    .saved-item .si-remove:hover { color: var(--accent); }
+    .save-paper-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 4px 10px; border: 1px solid var(--border);
+      border-radius: 2px; background: transparent;
+      color: var(--ink-muted); cursor: pointer;
+      transition: all 0.15s; display: inline-flex;
+      align-items: center; gap: 5px; margin-top: 10px;
+    }
+    .save-paper-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .save-paper-btn.saved { background: var(--gold-pale); color: #8a6e2a; border-color: var(--gold); cursor: default; }
+
+    /* ── Related Topics ── */
+    .related-topics { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-light); }
+    .related-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px;
+    }
+    .related-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .related-chip {
+      font-size: 12px; padding: 5px 13px;
+      border: 1px solid var(--border); border-radius: 20px;
+      background: white; color: var(--ink-soft); cursor: pointer;
+      font-family: 'Source Serif 4', serif; transition: all 0.15s;
+    }
+    .related-chip:hover { background: var(--ink); color: var(--cream); border-color: var(--ink); }
   </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
+<!-- LANDING PAGE -->
+<div id="landing">
+  <div class="landing-inner">
+    <div class="landing-logo">⚖</div>
+    <div class="landing-label">Research Intelligence</div>
+    <h1 class="landing-title">Scholar by Alankriti</h1>
+    <p class="landing-sub">Your intelligent guide to peer-reviewed academic literature.<br>Built for university researchers who need verified sources, fast.</p>
+    <div class="landing-features">
+      <div class="lf-card">
+        <div class="lf-icon">🔬</div>
+        <div class="lf-text">
+          <strong>Academic Sources Only</strong>
+          <span>Searches arXiv, PubMed, IEEE, Nature, Springer & more — no blogs or random articles ever</span>
+        </div>
+      </div>
+      <div class="lf-card">
+        <div class="lf-icon">📋</div>
+        <div class="lf-text">
+          <strong>Auto-Generated Citations</strong>
+          <span>Every response includes APA, MLA, Chicago or Harvard citations — copy in one click</span>
+        </div>
+      </div>
+      <div class="lf-card">
+        <div class="lf-icon">❤️</div>
+        <div class="lf-text">
+          <strong>Save & Export</strong>
+          <span>Bookmark favourite papers and export your full research session as a formatted PDF</span>
+        </div>
+      </div>
+    </div>
+    <button class="landing-cta" onclick="enterApp()">Start Researching →</button>
+    <div class="landing-hint">Free · Peer-reviewed only · No login required</div>
+  </div>
+</div>
 <div id="sidebar">
   <div class="sidebar-brand">
-    <div class="journal-label">Research Intelligence</div>
-    <h1>Scholar by<br>Alankriti</h1>
-    <div class="by-line">Academic Paper Agent</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+      <div>
+        <div class="journal-label">Research Intelligence</div>
+        <h1>Scholar by<br>Alankriti</h1>
+        <div class="by-line">Academic Paper Agent</div>
+      </div>
+      <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">
+        <svg id="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <div class="sidebar-section">
@@ -739,6 +907,16 @@
     <div class="history-empty">No searches yet</div>
   </div>
 
+  <div class="sidebar-section" style="padding-bottom:4px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="sidebar-section-label" style="margin-bottom:0;">Saved Papers</div>
+      <span id="saved-badge" style="display:none;font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--gold);color:var(--ink);padding:2px 7px;border-radius:20px;font-weight:600;"></span>
+    </div>
+  </div>
+  <div id="saved-list" style="padding:0 24px 8px;overflow-y:auto;max-height:160px;">
+    <div class="history-empty">No saved papers yet</div>
+  </div>
+
   <div class="sidebar-footer">
     <div class="sidebar-section-label" style="margin-bottom:8px;">Indexed Sources</div>
     <div class="source-tags-mini">
@@ -754,7 +932,47 @@
   </div>
 </div>
 
-<!-- MAIN -->
+<!-- LANDING PAGE -->
+<div id="landing">
+  <div class="landing-inner">
+    <div class="landing-logo">⚖</div>
+    <div class="landing-label">Research Intelligence</div>
+    <h1 class="landing-title">Scholar by Alankriti</h1>
+    <p class="landing-sub">Your intelligent guide to peer-reviewed academic literature.<br>Built for university researchers who need verified sources, fast.</p>
+    <div class="landing-features">
+      <div class="lf-card">
+        <div class="lf-icon">🔬</div>
+        <div class="lf-text">
+          <strong>Academic Sources Only</strong>
+          <span>Searches arXiv, PubMed, IEEE, Nature, Springer, JSTOR and more — no blogs or random articles</span>
+        </div>
+      </div>
+      <div class="lf-card">
+        <div class="lf-icon">📋</div>
+        <div class="lf-text">
+          <strong>Auto-Generated Citations</strong>
+          <span>Every response includes APA, MLA, Chicago or Harvard citations you can copy in one click</span>
+        </div>
+      </div>
+      <div class="lf-card">
+        <div class="lf-icon">❤️</div>
+        <div class="lf-text">
+          <strong>Save & Export</strong>
+          <span>Bookmark favourite papers and export your full research session as a formatted PDF</span>
+        </div>
+      </div>
+    </div>
+    <button class="landing-cta" onclick="enterApp()">Start Researching →</button>
+    <div class="landing-hint">Free · Peer-reviewed only · No login required</div>
+  </div>
+</div>
+
+<!-- Collapsed sidebar expand tab -->
+<div id="sidebar-tab" onclick="toggleSidebar()" style="display:none;">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"></polyline></svg>
+</div>
+
+<!-- MAIN APP -->
 <div id="main">
   <div id="topbar">
     <span class="topbar-title">Peer-Reviewed Research Assistant</span>
@@ -805,9 +1023,59 @@
 
   let history    = [];
   let loading    = false;
-  let sessionLog = []; // for PDF export
+  let sessionLog = [];
   let searchHist = [];
   let activeFilter = { from: null, to: null };
+  let savedPapers  = JSON.parse(localStorage.getItem('scholar_saved') || '[]');
+
+  // ── Landing page ───────────────────────────────────────────────────────────
+  function enterApp() {
+    document.getElementById('landing').classList.add('hidden');
+    document.getElementById('sidebar').style.display = 'flex';
+    document.getElementById('main').style.display = 'flex';
+    queryEl.focus();
+  }
+
+  // Hide sidebar and main until user enters app
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('main').style.display = 'none';
+
+  // ── Saved Papers ───────────────────────────────────────────────────────────
+  function renderSavedList() {
+    const el    = document.getElementById('saved-list');
+    const badge = document.getElementById('saved-badge');
+    if (savedPapers.length === 0) {
+      el.innerHTML = '<div class="history-empty">No saved papers yet</div>';
+      badge.style.display = 'none';
+    } else {
+      badge.style.display = 'inline';
+      badge.textContent = savedPapers.length;
+      el.innerHTML = savedPapers.map((p, i) => `
+        <div class="saved-item">
+          <span class="si-title">${p.slice(0, 55)}${p.length > 55 ? '…' : ''}</span>
+          <button class="si-remove" onclick="removeSaved(${i})" title="Remove">×</button>
+        </div>`).join('');
+    }
+  }
+
+  function savePaper(title, btn) {
+    if (!savedPapers.includes(title)) {
+      savedPapers.push(title);
+      localStorage.setItem('scholar_saved', JSON.stringify(savedPapers));
+      renderSavedList();
+    }
+    btn.classList.add('saved');
+    btn.innerHTML = '❤ Saved';
+    btn.disabled = true;
+  }
+
+  function removeSaved(i) {
+    savedPapers.splice(i, 1);
+    localStorage.setItem('scholar_saved', JSON.stringify(savedPapers));
+    renderSavedList();
+  }
+
+  renderSavedList();
 
   function applyFilter() {
     const from = parseInt(document.getElementById('year-from').value);
@@ -838,7 +1106,19 @@
     document.getElementById('filter-badge').style.display = 'none';
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // ── Sidebar toggle ─────────────────────────────────────────────────────────
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const tab     = document.getElementById('sidebar-tab');
+    const icon    = document.getElementById('toggle-icon');
+    const collapsed = sidebar.classList.toggle('collapsed');
+    tab.style.display = collapsed ? 'flex' : 'none';
+    if (icon) {
+      icon.innerHTML = collapsed
+        ? '<polyline points="9 18 15 12 9 6"></polyline>'   // chevron right
+        : '<polyline points="15 18 9 12 15 6"></polyline>';  // chevron left
+    }
+  }
   function autoResize(el) {
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 160) + 'px';
@@ -864,7 +1144,7 @@
     messagesEl.innerHTML = `
       <div class="welcome">
         <span class="ornament">⚖</span>
-        <h2>Welcome to Scholar by Alankriti</h2>
+        <h2>Welcome to Alankriti Scholar</h2>
         <p>Your intelligent guide to peer-reviewed academic literature.<br>Ask about any research topic — I surface only verified academic sources.</p>
         <div class="welcome-chips">
           <button class="wchip" onclick="fillAndSend(this)">Studies on financial literacy in India</button>
@@ -1065,8 +1345,20 @@
     });
   });
 
+  function extractRelatedTopics(text) {
+    // Look for "Related" or "Adjacent" or "Further" section in response
+    const relatedMatch = text.match(/(?:related|adjacent|further|explore|also consider)[^:]*:\s*([^\n.]+)/i);
+    if (relatedMatch) {
+      return relatedMatch[1].split(/[,·•]/).map(t => t.trim()).filter(t => t.length > 3 && t.length < 50).slice(0, 4);
+    }
+    // Fallback: extract key noun phrases from last paragraph
+    return [];
+  }
+
   function buildSourcesHtml(sources, citationFormat, rawText) {
     let html = '';
+
+    // Sources row
     if (sources && sources.length > 0) {
       html += '<div class="sources-row"><span class="sources-label">Sources</span>';
       sources.forEach(s => {
@@ -1074,11 +1366,26 @@
       });
       html += '</div>';
     }
-    // Extract real papers from response text
+
+    // Save paper button (saves the query/topic)
+    const topic = (rawText || '').split('\n')[0].slice(0, 80);
+    html += `<button class="save-paper-btn" onclick="savePaper('${topic.replace(/'/g,"\\'")}', this)">♡ Save this result</button>`;
+
+    // Citations
     const papers = extractPapersFromText(rawText || '');
     lastExtractedPapers = papers;
     const citHtml = renderCitationBoxes(papers, citationFormat);
     html += `<div class="citation-region" data-papers='${JSON.stringify(papers)}'>${citHtml}</div>`;
+
+    // Related topics
+    const related = extractRelatedTopics(rawText || '');
+    if (related.length > 0) {
+      html += `<div class="related-topics">
+        <div class="related-label">You might also explore</div>
+        <div class="related-chips">${related.map(t => `<button class="related-chip" onclick="fillAndSend(this)">${t}</button>`).join('')}</div>
+      </div>`;
+    }
+
     return html;
   }
 
