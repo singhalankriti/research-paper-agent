@@ -616,8 +616,67 @@
     }
     .msg { animation: fadeUp 0.3s ease forwards; }
 
-    /* Divider */
-    .vol-divider {
+    /* ── Mobile Responsive ── */
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+
+      #sidebar {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        border-right: none;
+        border-bottom: 1px solid #2d2a26;
+        max-height: none;
+        overflow: visible;
+      }
+      .sidebar-brand {
+        flex: 1;
+        padding: 14px 16px;
+        border-bottom: none;
+        border-right: 1px solid #2d2a26;
+        min-width: 160px;
+      }
+      .sidebar-brand h1 { font-size: 16px; }
+      .sidebar-section {
+        padding: 12px 16px 8px;
+        min-width: 200px;
+        flex: 1;
+      }
+      #history-list { display: none; }
+      .sidebar-footer { display: none; }
+
+      #main { height: calc(100vh - 140px); }
+
+      #topbar {
+        padding: 10px 16px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .topbar-title { font-size: 13px; }
+      .topbar-actions { gap: 6px; }
+      .action-btn { font-size: 9px; padding: 4px 8px; }
+
+      #messages { padding: 16px; gap: 18px; }
+
+      .msg { max-width: 100%; }
+      .bubble { padding: 12px 14px; font-size: 13.5px; }
+
+      .welcome h2 { font-size: 20px; }
+      .welcome-chips { gap: 6px; }
+      .wchip { font-size: 11px; padding: 6px 12px; }
+
+      #input-area { padding: 12px 16px 16px; }
+
+      .year-range { gap: 4px; }
+      .year-input { width: 60px; font-size: 11px; }
+    }
+
+    @media (max-width: 480px) {
+      #sidebar { flex-direction: column; }
+      .sidebar-brand { border-right: none; border-bottom: 1px solid #2d2a26; }
+      .sidebar-section { border-bottom: 1px solid #2d2a26; }
+      #main { height: calc(100vh - 220px); }
+    }
       text-align: center;
       font-family: 'JetBrains Mono', monospace;
       font-size: 9px;
@@ -751,9 +810,22 @@
   let activeFilter = { from: null, to: null };
 
   function applyFilter() {
-    const from = document.getElementById('year-from').value;
-    const to   = document.getElementById('year-to').value;
-    if (!from || !to) return;
+    const from = parseInt(document.getElementById('year-from').value);
+    const to   = parseInt(document.getElementById('year-to').value);
+    const currentYear = new Date().getFullYear();
+
+    if (!from || !to) {
+      alert('Please enter both start and end years.'); return;
+    }
+    if (from < 1000 || from > currentYear) {
+      alert(`Start year must be between 1000 and ${currentYear}.`); return;
+    }
+    if (to < 1000 || to > currentYear) {
+      alert(`End year must be between 1000 and ${currentYear}.`); return;
+    }
+    if (from > to) {
+      alert('Start year cannot be greater than end year.'); return;
+    }
     activeFilter = { from, to };
     document.getElementById('filter-badge').style.display = 'block';
     document.getElementById('filter-badge-text').textContent = `${from}–${to}`;
