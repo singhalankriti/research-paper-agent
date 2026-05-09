@@ -38,13 +38,12 @@ function deduplicateText(text) {
     .join('\n\n');
 }
 
-function httpsPost(url, headers, body) {
+function httpsPost(hostname, path, headers, body) {
   return new Promise((resolve, reject) => {
-    const urlObj = new URL(url);
     const bodyStr = JSON.stringify(body);
     const options = {
-      hostname: urlObj.hostname,
-      path: urlObj.pathname + urlObj.search,
+      hostname,
+      path,
       method: "POST",
       headers: { ...headers, "Content-Length": Buffer.byteLength(bodyStr) },
     };
@@ -70,66 +69,50 @@ app.post("/api/chat", async (req, res) => {
     return res.status(400).json({ error: "messages array is required" });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: "GEMINI_API_KEY is not set on the server." });
+    return res.status(500).json({ error: "GROQ_API_KEY is not set on the server." });
   }
 
-  const geminiMessages = messages.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
+  const groqMessages = [
+    { role: "system", content: SYSTEM_INSTRUCTION },
+    ...messages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }))
+  ];
 
   try {
     const { status, data } = await httpsPost(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      { "Content-Type": "application/json" },
+      "api.groq.com",
+      "/openai/v1/chat/completions",
       {
-        system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-        contents: geminiMessages,
-        tools: [{ google_search: {} }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 8000 },
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      {
+        model: "llama-3.3-70b-versatile",
+        messages: groqMessages,
+        max_tokens: 8000,
+        temperature: 0.2,
       }
     );
 
-    console.log("Gemini status:", status);
+    console.log("Groq status:", status);
 
     if (status !== 200) {
-      const errMsg = data?.error?.message || "Gemini API error";
-      console.error("Gemini error:", errMsg);
+      const errMsg = data?.error?.message || "Groq API error";
+      console.error("Groq error:", errMsg);
       return res.status(status).json({ error: errMsg });
     }
 
-    let text = "";
-    let sources = [];
-
-    const candidate = data.candidates?.[0];
-    if (candidate?.content?.parts) {
-      for (const part of candidate.content.parts) {
-        if (part.text) text += part.text;
-      }
-    }
-
+    let text = data.choices?.[0]?.message?.content || "";
     text = deduplicateText(text);
-
-    const groundingMeta = candidate?.groundingMetadata;
-    if (groundingMeta?.groundingChunks) {
-      sources = groundingMeta.groundingChunks
-        .filter((c) => c.web?.uri)
-        .map((c) => ({ title: c.web.title || c.web.uri, url: c.web.uri }))
-        .filter((s) => {
-          const blocked = ["youtube.com", "twitter.com", "facebook.com",
-            "instagram.com", "reddit.com", "tiktok.com", "amazon.com", "wikipedia.org"];
-          return !blocked.some((d) => s.url.includes(d));
-        })
-        .slice(0, 6);
-    }
 
     if (!text) {
       text = "I could not find relevant academic research on this topic. Please try a more specific query.";
     }
 
-    res.json({ text, sources });
+    // Groq doesn't have built-in web search, so no grounding sources
+    res.json({ text, sources: [] });
+
   } catch (err) {
     console.error("Server error:", err);
     res.status(500).json({ error: err.message });
