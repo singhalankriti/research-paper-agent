@@ -6,6 +6,8 @@
   <title>Alankriti · Research Paper Agent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     :root {
@@ -900,7 +902,82 @@
       background: var(--border-light);
     }
 
-    /* ── Landing Page ── */
+    /* Paper metadata card (DOI lookup result) */
+    .paper-meta-card {
+      background: var(--accent-pale);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+    }
+    .pmc-title { font-weight: 600; color: var(--ink); font-size: 14px; margin-bottom: 4px; }
+    .pmc-meta { font-size: 12px; color: var(--ink-muted); margin-bottom: 8px; font-style: italic; }
+    .pmc-link {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--accent);
+      text-decoration: none; display: inline-flex;
+      align-items: center; gap: 4px;
+    }
+    .pmc-link:hover { text-decoration: underline; }
+    .tool-bar {
+      display: flex; gap: 6px; align-items: center;
+      padding-bottom: 10px; flex-wrap: wrap;
+    }
+    .tool-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 0.05em;
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--ink-muted);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .tool-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .pdf-active-badge {
+      display: flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; padding: 4px 10px;
+      background: var(--accent-pale);
+      border: 1px solid var(--accent);
+      border-radius: 4px; color: var(--accent);
+    }
+    .pdf-active-badge button {
+      background: none; border: none; cursor: pointer;
+      color: var(--accent); font-size: 14px; line-height: 1;
+      padding: 0; margin-left: 2px;
+    }
+    /* DOI bar */
+    #doi-bar {
+      display: flex; gap: 8px; align-items: center;
+      padding-bottom: 10px;
+    }
+    #doi-input {
+      flex: 1; padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px; font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--input-bg); color: var(--ink);
+      outline: none;
+    }
+    #doi-input:focus { border-color: var(--accent); }
+    #doi-bar button {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; padding: 7px 14px;
+      border-radius: 4px; border: 1px solid var(--border);
+      background: transparent; color: var(--ink-muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    #doi-bar button:first-of-type { background: var(--accent); color: white; border-color: var(--accent); }
+    #doi-bar button:first-of-type:hover { opacity: 0.85; }
+
+    body.dark .tool-btn { border-color: #3a3a3a; color: #888888; }
+    body.dark .tool-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    body.dark #doi-input { border-color: #3a3a3a; }
+    body.dark #doi-bar button { border-color: #3a3a3a; color: #888888; }
     #landing {
       position: fixed; inset: 0;
       background: var(--ink);
@@ -1163,8 +1240,43 @@
   </div>
 
   <div id="input-area">
+    <!-- Tool bar -->
+    <div class="tool-bar">
+      <button class="tool-btn" onclick="triggerPDFUpload()" title="Upload a PDF paper">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        Upload PDF
+      </button>
+      <button class="tool-btn" onclick="showDoiBar()" title="Look up a DOI or arXiv ID">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        DOI / arXiv
+      </button>
+      <button class="tool-btn" onclick="generateLitReview()" title="Generate literature review from saved papers" id="lit-review-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Lit Review
+      </button>
+      <button class="tool-btn" onclick="compareSavedPapers()" title="Compare saved papers" id="compare-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18"/><rect x="14" y="3" width="7" height="18"/></svg>
+        Compare
+      </button>
+      <span id="pdf-indicator" style="display:none;" class="pdf-active-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+        <span id="pdf-name"></span>
+        <button onclick="clearPDF()" title="Remove PDF">×</button>
+      </span>
+    </div>
+
+    <!-- DOI bar (hidden by default) -->
+    <div id="doi-bar" style="display:none;">
+      <input type="text" id="doi-input" placeholder="Paste DOI (10.1038/...) or arXiv ID (2301.07041) or arXiv URL" />
+      <button onclick="lookupDOI()">Look up</button>
+      <button onclick="document.getElementById('doi-bar').style.display='none'">×</button>
+    </div>
+
+    <!-- Hidden PDF input -->
+    <input type="file" id="pdf-file-input" accept=".pdf" style="display:none;" onchange="handlePDFUpload(event)" />
+
     <div class="input-wrap">
-      <textarea id="query" rows="2" placeholder="Search academic literature, journals, research topics…" onkeydown="handleKey(event)" oninput="autoResize(this); updateCharCount(this)"></textarea>
+      <textarea id="query" rows="2" placeholder="Search academic literature, ask about a paper, or paste a topic…" onkeydown="handleKey(event)" oninput="autoResize(this); updateCharCount(this)"></textarea>
       <button id="send-btn" onclick="sendMessage()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -1192,6 +1304,202 @@
   let searchHist = [];
   let activeFilter = { from: null, to: null };
   let savedPapers  = JSON.parse(localStorage.getItem('scholar_saved') || '[]');
+  let currentPDF   = null; // { name, text }
+  let pdfHistory   = []; // conversation history about current PDF
+
+  // ── PDF Upload ─────────────────────────────────────────────────────────────
+  function triggerPDFUpload() {
+    document.getElementById('pdf-file-input').click();
+  }
+
+  function handlePDFUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    addMsg('agent', `<div class="searching-label"><span class="spin"></span>Reading PDF — ${file.name}…</div>`);
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        // Use PDF.js to extract text
+        const pdfData = new Uint8Array(e.target.result);
+        const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+        let text = '';
+        for (let i = 1; i <= Math.min(pdf.numPages, 40); i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map(item => item.str).join(' ') + '\n';
+        }
+
+        currentPDF = { name: file.name, text };
+        pdfHistory = [];
+
+        // Show indicator
+        document.getElementById('pdf-indicator').style.display = 'flex';
+        document.getElementById('pdf-name').textContent = file.name.slice(0, 30) + (file.name.length > 30 ? '…' : '');
+
+        // Remove the loading message
+        const last = messagesEl.lastChild;
+        if (last) last.remove();
+
+        // Auto-summarise
+        addMsg('user', `📎 Uploaded: ${file.name}`, `Uploaded PDF: ${file.name}`);
+        await analyzePDF("Please provide a comprehensive summary of this paper.");
+
+      } catch (err) {
+        const last = messagesEl.lastChild;
+        if (last) last.remove();
+        addMsg('agent', `<span class="error-msg">Could not read PDF: ${err.message}. Make sure it's a text-based PDF (not a scanned image).</span>`);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
+  }
+
+  async function analyzePDF(question) {
+    if (!currentPDF) return;
+    loading = true; sendBtn.disabled = true;
+    showTyping();
+    try {
+      const res = await fetch('/api/analyze-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pdfText: currentPDF.text, question, messages: pdfHistory })
+      });
+      const data = await res.json();
+      hideTyping();
+      if (!res.ok) { addMsg('agent', `<span class="error-msg">Error: ${data.error}</span>`); }
+      else {
+        addMsg('agent', fmt(data.text), data.text);
+        pdfHistory.push({ role: 'user', content: question });
+        pdfHistory.push({ role: 'assistant', content: data.text });
+      }
+    } catch (err) {
+      hideTyping();
+      addMsg('agent', `<span class="error-msg">Error: ${err.message}</span>`);
+    }
+    loading = false; sendBtn.disabled = false;
+  }
+
+  function clearPDF() {
+    currentPDF = null; pdfHistory = [];
+    document.getElementById('pdf-indicator').style.display = 'none';
+    document.getElementById('pdf-name').textContent = '';
+  }
+
+  // ── DOI / arXiv Lookup ─────────────────────────────────────────────────────
+  function showDoiBar() {
+    const bar = document.getElementById('doi-bar');
+    bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
+    if (bar.style.display === 'flex') document.getElementById('doi-input').focus();
+  }
+
+  async function lookupDOI() {
+    const input = document.getElementById('doi-input').value.trim();
+    if (!input) return;
+    document.getElementById('doi-bar').style.display = 'none';
+
+    addMsg('user', `🔗 Looking up: ${input}`, `DOI/arXiv lookup: ${input}`);
+    showTyping();
+    loading = true; sendBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input })
+      });
+      const data = await res.json();
+      hideTyping();
+
+      if (!res.ok) { addMsg('agent', `<span class="error-msg">Error: ${data.error}</span>`); }
+      else {
+        const { metadata, summary } = data;
+        const metaHtml = `
+          <div class="paper-meta-card">
+            <div class="pmc-title">${metadata.title}</div>
+            <div class="pmc-meta">${metadata.authors} · ${metadata.year} · ${metadata.journal}</div>
+            <a class="pmc-link" href="${metadata.url}" target="_blank" rel="noopener">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open paper
+            </a>
+          </div>`;
+        addMsg('agent', metaHtml + fmt(summary), summary);
+
+        // Auto-save to saved papers
+        savePaper(metadata.title, metadata.authors, metadata.year, { silent: true, journal: metadata.journal, summary: summary.slice(0, 300) });
+      }
+    } catch (err) {
+      hideTyping();
+      addMsg('agent', `<span class="error-msg">Error: ${err.message}</span>`);
+    }
+    document.getElementById('doi-input').value = '';
+    loading = false; sendBtn.disabled = false;
+  }
+
+  // Allow Enter in DOI input
+  document.getElementById('doi-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') lookupDOI();
+    if (e.key === 'Escape') document.getElementById('doi-bar').style.display = 'none';
+  });
+
+  // ── Literature Review ──────────────────────────────────────────────────────
+  async function generateLitReview() {
+    if (savedPapers.length < 2) {
+      alert('Save at least 2 papers first using the ❤ button on citations, then generate a literature review.');
+      return;
+    }
+    const topic = prompt(`Literature review topic (optional — press Enter to auto-detect from your ${savedPapers.length} saved papers):`);
+    if (topic === null) return; // cancelled
+
+    addMsg('user', `📝 Generate literature review from ${savedPapers.length} saved papers${topic ? ': ' + topic : ''}`, '');
+    showTyping(); loading = true; sendBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/literature-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ papers: savedPapers, topic })
+      });
+      const data = await res.json();
+      hideTyping();
+      if (!res.ok) addMsg('agent', `<span class="error-msg">Error: ${data.error}</span>`);
+      else {
+        addMsg('agent', fmt(data.text), data.text);
+        exportBtn.disabled = false;
+      }
+    } catch (err) {
+      hideTyping();
+      addMsg('agent', `<span class="error-msg">Error: ${err.message}</span>`);
+    }
+    loading = false; sendBtn.disabled = false;
+  }
+
+  // ── Compare Papers ─────────────────────────────────────────────────────────
+  async function compareSavedPapers() {
+    if (savedPapers.length < 2) {
+      alert('Save at least 2 papers first using the ❤ button on citations, then compare them.');
+      return;
+    }
+    addMsg('user', `⚖ Comparing ${savedPapers.length} saved papers`, '');
+    showTyping(); loading = true; sendBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/compare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ papers: savedPapers })
+      });
+      const data = await res.json();
+      hideTyping();
+      if (!res.ok) addMsg('agent', `<span class="error-msg">Error: ${data.error}</span>`);
+      else addMsg('agent', fmt(data.text), data.text);
+    } catch (err) {
+      hideTyping();
+      addMsg('agent', `<span class="error-msg">Error: ${err.message}</span>`);
+    }
+    loading = false; sendBtn.disabled = false;
+  }
 
   // ── Landing page ───────────────────────────────────────────────────────────
   function enterApp() {
@@ -1228,17 +1536,24 @@
     }
   }
 
-  function savePaper(title, authors, year, btn) {
-    const paper = { title, authors, year };
+  function savePaper(title, authors, year, btnOrOpts) {
+    const isSilent = btnOrOpts && typeof btnOrOpts === 'object' && btnOrOpts.silent;
+    const paper = {
+      title, authors, year,
+      journal: isSilent ? (btnOrOpts.journal || '') : '',
+      summary: isSilent ? (btnOrOpts.summary || '') : ''
+    };
     const key = title.slice(0, 40).toLowerCase();
     if (!savedPapers.find(p => (p.title||p).slice(0,40).toLowerCase() === key)) {
       savedPapers.push(paper);
       localStorage.setItem('scholar_saved', JSON.stringify(savedPapers));
       renderSavedList();
     }
-    btn.style.color = 'var(--accent)';
-    btn.title = 'Saved!';
-    setTimeout(() => { btn.style.color = ''; btn.title = 'Save paper'; }, 1500);
+    if (!isSilent && btnOrOpts) {
+      btnOrOpts.style.color = 'var(--accent)';
+      btnOrOpts.title = 'Saved!';
+      setTimeout(() => { btnOrOpts.style.color = ''; btnOrOpts.title = 'Save paper'; }, 1500);
+    }
   }
 
   function removeSaved(i) {
@@ -1705,8 +2020,16 @@
   async function sendMessage() {
     const q = queryEl.value.trim();
     if (!q || loading) return;
-    if (q.length > 800) {
-      alert('Query is too long. Please keep it under 800 characters.');
+    if (q.length > 800) { alert('Query is too long. Please keep it under 800 characters.'); return; }
+
+    // If PDF is loaded, route to PDF analysis
+    if (currentPDF) {
+      loading = true; sendBtn.disabled = true;
+      queryEl.value = ''; queryEl.style.height = 'auto'; updateCharCount(queryEl);
+      addMsg('user', q, q);
+      await analyzePDF(q);
+      loading = false; sendBtn.disabled = false;
+      queryEl.focus();
       return;
     }
 
