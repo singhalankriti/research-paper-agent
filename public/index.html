@@ -566,6 +566,19 @@
     }
     .char-count.warn { color: var(--accent-soft); }
 
+    /* Paper list entries */
+    .paper-line {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 4px 0 4px 4px; margin: 2px 0;
+      border-left: 2px solid var(--gold);
+      padding-left: 10px;
+      line-height: 1.65;
+    }
+    .paper-marker {
+      color: var(--gold); flex-shrink: 0;
+      font-size: 16px; line-height: 1.4; font-weight: 600;
+    }
+
     /* Bullet items */
     .bullet-item {
       display: flex; gap: 10px; align-items: flex-start;
@@ -1250,7 +1263,8 @@
     // Italic
     text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-    // Asterisk bullets (* item) — Groq uses these
+    // Quoted paper lines: "Title" by Author - Journal
+    text = text.replace(/^(".*?".*?-.*?)$/gm, '<div class="paper-line"><span class="paper-marker">›</span><span>$1</span></div>');
     text = text.replace(/^\*\s+(.+)$/gm, '<div class="bullet-item"><span class="bullet-dot">›</span><span>$1</span></div>');
     // Dash bullets
     text = text.replace(/^[-–]\s+(.+)$/gm, '<div class="bullet-item"><span class="bullet-dot">›</span><span>$1</span></div>');
