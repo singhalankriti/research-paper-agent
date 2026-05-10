@@ -566,27 +566,18 @@
     }
     .char-count.warn { color: var(--accent-soft); }
 
-    /* Paper list entries — numbered academic style */
-    .papers-list { counter-reset: paper-counter; margin: 4px 0; }
+    /* Paper list entries — plain numbered */
     .paper-line {
       display: flex; gap: 10px; align-items: flex-start;
-      padding: 6px 10px 6px 0;
-      border-bottom: 1px solid var(--border-light);
-      line-height: 1.65;
-      counter-increment: paper-counter;
+      padding: 3px 0; line-height: 1.65;
     }
-    .paper-line:last-child { border-bottom: none; }
     .paper-marker {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      color: white;
-      background: var(--gold);
-      border-radius: 2px;
-      padding: 2px 6px;
+      font-size: 12px;
+      color: var(--ink-muted);
       flex-shrink: 0;
-      margin-top: 3px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      margin-top: 2px;
+      min-width: 18px;
     }
 
     /* Bullet items */
@@ -1277,7 +1268,7 @@
     let paperCount = 0;
     text = text.replace(/^(".*?".*?-.*?)$/gm, (match) => {
       paperCount++;
-      return `<div class="paper-line"><span class="paper-marker">${paperCount}</span><span>${match}</span></div>`;
+      return `<div class="paper-line"><span class="paper-marker">${paperCount}.</span><span>${match}</span></div>`;
     });
     text = text.replace(/^\*\s+(.+)$/gm, '<div class="bullet-item"><span class="bullet-dot">›</span><span>$1</span></div>');
     // Dash bullets
