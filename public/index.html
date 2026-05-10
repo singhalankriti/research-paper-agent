@@ -15,9 +15,9 @@
       --ink-soft: #3d3830;
       --ink-muted: #7a6f61;
       --ink-faint: #b5a99a;
-      --accent: #8b2635;
-      --accent-soft: #c4515f;
-      --accent-pale: #f5e6e8;
+      --accent: #1a3a6b;
+      --accent-soft: #3d6abf;
+      --accent-pale: #e8eef8;
       --gold: #c49a3c;
       --gold-pale: #f7f0e0;
       --border: #d4cdc2;
@@ -234,7 +234,7 @@
     }
     .action-btn:hover { background: var(--ink); color: var(--cream); border-color: var(--ink); }
     .action-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
-    .action-btn.primary:hover { background: #6e1e2a; border-color: #6e1e2a; }
+    .action-btn.primary:hover { background: #122a52; border-color: #122a52; }
 
     /* Messages area */
     #messages {
@@ -542,7 +542,7 @@
       transition: background 0.15s;
       flex-shrink: 0;
     }
-    #send-btn:hover { background: #6e1e2a; }
+    #send-btn:hover { background: #122a52; }
     #send-btn:disabled { background: var(--border); cursor: default; }
     #send-btn svg { width: 18px; height: 18px; }
 
@@ -805,7 +805,7 @@
       cursor: pointer; transition: background 0.15s, transform 0.1s;
       margin-bottom: 14px; display: inline-block;
     }
-    .landing-cta:hover { background: #6e1e2a; transform: translateY(-1px); }
+    .landing-cta:hover { background: #122a52; transform: translateY(-1px); }
     .landing-hint { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4d4840; letter-spacing: 0.1em; }
 
     /* ── Saved Papers ── */
@@ -1264,13 +1264,19 @@
     // Italic
     text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-    // Quoted paper lines: "Title" by Author - Journal — wrap in numbered list
+    // Quoted paper lines — match "Title" with or without leading * or number
+    // Must run BEFORE bullet processing to catch * "Title" format
     let paperCount = 0;
-    text = text.replace(/^(".*?".*?-.*?)$/gm, (match) => {
+    text = text.replace(/^(?:\*\s+|[\-–]\s+|\d+\.\s+)?([""""].*?[""""].*?(?:by\s|\s-\s).+)$/gm, (match, p1) => {
       paperCount++;
-      return `<div class="paper-line"><span class="paper-marker">${paperCount}.</span><span>${match}</span></div>`;
+      return `<div class="paper-line"><span class="paper-marker">${paperCount}.</span><span>${p1}</span></div>`;
     });
-    text = text.replace(/^\*\s+(.+)$/gm, '<div class="bullet-item"><span class="bullet-dot">›</span><span>$1</span></div>');
+
+    // Asterisk bullets (* item) — only non-paper items left
+    text = text.replace(/^\*\s+(.+)$/gm, (match, p1) => {
+      if (p1.startsWith('"') || p1.startsWith('\u201c')) return match; // already handled
+      return `<div class="bullet-item"><span class="bullet-dot">›</span><span>${p1}</span></div>`;
+    });
     // Dash bullets
     text = text.replace(/^[-–]\s+(.+)$/gm, '<div class="bullet-item"><span class="bullet-dot">›</span><span>$1</span></div>');
     // Numbered
