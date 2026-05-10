@@ -18,8 +18,8 @@
       --accent: #1a3a6b;
       --accent-soft: #3d6abf;
       --accent-pale: #e8eef8;
-      --gold: #c49a3c;
-      --gold-pale: #f7f0e0;
+      --gold: #c8923a;
+      --gold-pale: #f7ede0;
       --border: #d4cdc2;
       --border-light: #e8e2d8;
       --shadow: rgba(26,23,20,0.08);
@@ -39,7 +39,7 @@
 
     /* ── Dark Mode — Material Design grey palette ── */
     body.dark {
-      /* Backgrounds — proper dark greys, NOT blue */
+      /* Backgrounds */
       --cream: #1e1e1e;
       --cream-dark: #2a2a2a;
       --main-bg: #121212;
@@ -52,26 +52,24 @@
       --sb-border: #2a2a2a;
       --sb-text: #e0e0e0;
 
-      /* Text — warm off-white, never pure white */
+      /* Text */
       --ink: #e0e0e0;
       --ink-soft: #c4c4c4;
       --ink-muted: #888888;
       --ink-faint: #555555;
 
-      /* Accent — desaturated soft blue, not saturated */
+      /* Accent */
       --accent: #7aa2d4;
       --accent-soft: #9bbce8;
       --accent-pale: #1a2030;
 
-      /* Gold — slightly muted */
-      --gold: #d4a843;
+      /* Gold → amber-bronze, works better with blue */
+      --gold: #c8923a;
       --gold-pale: #262010;
 
       /* Borders */
       --border: #333333;
       --border-light: #2a2a2a;
-
-      /* Shadows */
       --shadow: rgba(0,0,0,0.5);
       --shadow-md: rgba(0,0,0,0.7);
     }
@@ -112,6 +110,9 @@
     body.dark .paper-line { border-bottom-color: #2a2a2a; }
     body.dark .bubble strong { color: #e0e0e0; }
     body.dark .sidebar-brand { border-bottom-color: #2a2a2a; }
+    body.dark .sidebar-brand h1 { color: #e8e8e8; }
+    body.dark .sidebar-brand .journal-label { color: var(--gold); }
+    body.dark .sidebar-brand .by-line { color: #666666; }
     body.dark .sidebar-section { border-top-color: #222222; }
     body.dark .sidebar-section-label { color: #aaaaaa; }
     body.dark .history-item { color: #777777; }
@@ -178,7 +179,7 @@
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 20px;
       font-weight: 700;
-      color: var(--cream);
+      color: var(--sb-text);
       line-height: 1.2;
     }
     .sidebar-brand .by-line {
@@ -855,8 +856,8 @@
         gap: 8px;
         flex-wrap: nowrap;
       }
-      .topbar-title { font-size: 12px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .topbar-badge { display: none; }
+      .topbar-title { font-size: 11px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+      .topbar-badge { font-size: 9px; padding: 2px 6px; white-space: nowrap; }
       .action-btn { font-size: 9px; padding: 4px 7px; white-space: nowrap; }
 
       #messages { padding: 14px; gap: 16px; }
