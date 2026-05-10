@@ -562,6 +562,14 @@
     }
     .char-count.warn { color: var(--accent-soft); }
 
+    /* Bullet items */
+    .bullet-item {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding-left: 8px; margin: 3px 0; line-height: 1.65;
+    }
+    .bullet-dot { color: var(--accent); flex-shrink: 0; font-size: 16px; line-height: 1.4; }
+    .bullet-num { color: var(--ink-faint); flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; margin-top: 2px; }
+
     /* Sidebar toggle button */
     .sidebar-toggle {
       background: transparent;
@@ -789,7 +797,8 @@
       line-height: 1.4; border: 1px solid #2d2a26;
       border-radius: 4px; margin-bottom: 4px;
     }
-    .saved-item .si-title { flex: 1; color: #c8bfb0; font-size: 11px; }
+    .saved-item .si-title { flex: 1; color: #c8bfb0; font-size: 11px; cursor: pointer; }
+    .saved-item .si-title:hover { color: var(--gold); text-decoration: underline; }
     .saved-item .si-remove {
       flex-shrink: 0; background: none; border: none;
       color: #4d4840; cursor: pointer; font-size: 13px; padding: 0;
@@ -1042,11 +1051,11 @@
       badge.textContent = savedPapers.length;
       el.innerHTML = savedPapers.map((p, i) => {
         const display = (p.title || p).slice(0, 55);
-        const searchQuery = p.title ? `"${p.title}" ${p.authors||''}`.trim() : p;
-        const safe = searchQuery.replace(/'/g, "\\'");
+        const searchQuery = p.title ? `${p.title} ${p.authors||''}`.trim() : p;
+        const safe = searchQuery.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         return `
         <div class="saved-item">
-          <span class="si-title" onclick="queryEl.value='${safe}';autoResize(queryEl);sendMessage();" title="Search this paper">${display}${display.length >= 55 ? '…' : ''}</span>
+          <span class="si-title" onclick="runSavedSearch('${safe}')" title="Click to search this paper">${display}${display.length >= 55 ? '…' : ''}</span>
           <button class="si-remove" onclick="removeSaved(${i})" title="Remove">×</button>
         </div>`;
       }).join('');
@@ -1070,6 +1079,12 @@
     savedPapers.splice(i, 1);
     localStorage.setItem('scholar_saved', JSON.stringify(savedPapers));
     renderSavedList();
+  }
+
+  function runSavedSearch(query) {
+    queryEl.value = query;
+    autoResize(queryEl);
+    sendMessage();
   }
 
   renderSavedList();
@@ -1216,32 +1231,36 @@
 
   // ── Format response ────────────────────────────────────────────────────────
   function fmt(text) {
-    // Strip blank lines immediately before/after section headers
-    text = text.replace(/\n{2,}(#{1,3} )/g, '\n$1');
-    text = text.replace(/\n{2,}(\*\*[A-Z])/g, '\n$1');
+    // Collapse excess blank lines first
+    text = text.replace(/\n{3,}/g, '\n\n');
 
-    // Section headers
+    // Section headers — all formats Groq uses:
+    // ## Header, **Header**, Header: (at start of line), *Header:*
     text = text.replace(/^#{1,3}\s+(.+)$/gm, '<div class="section-head">$1</div>');
-    text = text.replace(/^\*\*([A-Z][^*\n]{1,60})\*\*\s*$/gm, '<div class="section-head">$1</div>');
+    text = text.replace(/^\*\*([A-Z][^*\n]{1,80})\*\*\s*:?\s*$/gm, '<div class="section-head">$1</div>');
+    // Plain "Word Word:" headers at line start (e.g. "Key Findings:", "Notable Papers:")
+    text = text.replace(/^([A-Z][a-zA-Z\s]{2,40}):\s*$/gm, '<div class="section-head">$1</div>');
 
-    // Bold inline (must come after section-head detection)
+    // Bold inline
     text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     // Italic
     text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-    // Bullets — compact margin
-    text = text.replace(/^[\-\•]\s+(.+)$/gm, '<div style="padding-left:14px;margin:2px 0;display:flex;gap:8px"><span style="color:var(--accent);flex-shrink:0">›</span><span>$1</span></div>');
+    // Asterisk bullets (* item) — Groq uses these
+    text = text.replace(/^\*\s+(.+)$/gm, '<div class="bullet-item"><span class="bullet-dot">›</span><span>$1</span></div>');
+    // Dash bullets
+    text = text.replace(/^[-–]\s+(.+)$/gm, '<div class="bullet-item"><span class="bullet-dot">›</span><span>$1</span></div>');
     // Numbered
-    text = text.replace(/^(\d+)\.\s+(.+)$/gm, '<div style="padding-left:14px;margin:2px 0;display:flex;gap:8px"><span style="color:var(--ink-faint);flex-shrink:0;font-family:JetBrains Mono,monospace;font-size:11px">$1.</span><span>$2</span></div>');
+    text = text.replace(/^(\d+)\.\s+(.+)$/gm, '<div class="bullet-item"><span class="bullet-num">$1.</span><span>$2</span></div>');
 
-    // Collapse 3+ blank lines to 1
-    text = text.replace(/\n{3,}/g, '\n\n');
     // Line breaks
     text = text.replace(/\n\n/g, '<br>');
     text = text.replace(/\n/g, '<br>');
 
-    // Remove br tags that appear right before section heads
+    // Remove br tags right before section heads for tight spacing
     text = text.replace(/(<br\s*\/?>)+(<div class="section-head">)/g, '$2');
+    // Remove br tags right after section heads
+    text = text.replace(/(<\/div>)(<br\s*\/?>)+(<div class="bullet-item"|[^<])/g, '$1$3');
 
     return text;
   }
